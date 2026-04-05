@@ -1,0 +1,25 @@
+{
+  "name": "sistemagelatoacai",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "npx @tailwindcss/cli -i ./Styles/imput.css -o ./Styles/output.css --watch",
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@tailwindcss/cli": "^4.1.17",
+    "cors": "^2.8.5",
+    "express": "^5.2.1",
+    "mercadopago": "^2.11.0",
+    "mysql2": "^3.16.0",
+    "tailwindcss": "^4.1.17"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11"
+  }
+}

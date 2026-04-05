@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gelato's Açai</title>
+
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <link rel="stylesheet" href="./Styles/output.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@100..900&display=swap" rel="stylesheet" />
+
+    <style>
+        #cart-items {
+            max-height: 300px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        #cart-items::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #cart-items::-webkit-scrollbar-thumb {
+            background: #cccccc;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- HEADER -->
+    <header class="h-[420px] bg-[linear-gradient(rgba(0,0,0,0.5),rgba(0,0,0,0.5)),url('/assets/about_loja.jpg')] bg-cover bg-center flex justify-center items-center">
+        <div class="w-full h-full flex flex-col justify-center items-center">
+            <img src="/assets/WhatsApp Image 2025-12-10 at 13.08.14.jpeg" alt="Logo Gelato's Açaí" class="w-52 m-4 rounded-full shadow-lg hover:scale-110 duration-200 produto-img" />
+            <h1 class="text-4xl mt-4 mb-2 font-bold text-white">Gelato's Açai</h1>
+            <span class="text-white font-medium">Rua Mario Trevizan 140, Jordanesia - SP</span>
+        </div>
+    </header>
+
+    <h2 class="text-2xl md:text-4xl font-bold text-center mt-9 mb-6">Conheça nosso Menu</h2>
+
+    <div id="menu">
+        <!-- AÇAÍS -->
+        <main class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7 md:gap-10 mx-auto max-w-7xl px-2 mb-16">
+
+            <div class="flex gap-2">
+                <img src="/assets/transferir.jpg" alt="Açaí" class="w-28 h-28 rounded-md hover:scale-110 duration-200 hover:-rotate-3 produto-img" />
+                <div>
+                    <p class="font-bold">Açai Tradicional 200ml</p>
+                    <p>Nosso açai baby acompanha: leite em pó e leite condensado.</p>
+                    <div class="flex items-center gap-2 justify-between mt-3">
+                        <p class="font-bold text-lg">R$13,99</p>
+                        <button class="bg-gray-900 px-5 rounded ver-produto-btn"
+                            data-id="1"
+                            data-name="Açai Tradicional 200ml"
+                            data-price="13.99"
+                            data-sem-complemento="true"
+                            data-img="/assets/transferir.jpg"
+                            data-desc="Nosso açai baby acompanha: leite em pó e leite condensado.">
+                            <i class="fa fa-cart-plus text-lg text-white"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-2">
+                <img src="/assets/acai.jpg" alt="Açaí" class="w-28 h-28 rounded-md hover:scale-110 duration-200 hover:-rotate-3 produto-img" />
+                <div>
+                    <p class="font-bold">Açai Tradicional 330ml</p>
+                    <p>Crie sua combinação perfeita e desfrute do melhor do açai!</p>
+                    <div class="flex items-center gap-2 justify-between mt-3">
+                        <p class="font-bold text-lg">R$16,99</p>
+                        <button class="bg-gray-900 px-5 rounded ver-produto-btn"
+                            data-id="2"
+                            data-name="Açai Tradicional 330ml"
+                            data-price="16.99"
+                            data-img="/assets/acai.jpg"
+                            data-desc="Crie sua combinação perfeita e desfrute do melhor do açai!">
+                            <i class="fa fa-cart-plus text-lg text-white"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-2">
+                <img src="/assets/transferir (3).jpg" alt="Açaí" class="w-28 h-28 rounded-md hover:scale-110 duration-200 hover:-rotate-3 produto-img" />
+                <div>
+                    <p class="font-bold">Açai Tradicional 440ml</p>
+                    <p>Crie sua combinação perfeita e desfrute do melhor do açai!</p>
+                    <div class="flex items-center gap-2 justify-between mt-3">
+                        <p class="font-bold text-lg">R$22,99</p>
+                        <button class="bg-gray-900 px-5 rounded ver-produto-btn"
+                            data-id="3"
+                            data-name="Açai Tradicional 440ml"
+                            data-price="22.99"
+                            data-img="/assets/transferir (3).jpg"
+                            data-desc="Crie sua combinação perfeita e desfrute do melhor do açai!">
+                            <i class="fa fa-cart-plus text-lg text-white"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-2">
+                <img src="/assets/public.avif" alt="Açaí" class="w-28 h-28 rounded-md hover:scale-110 duration-200 hover:-rotate-3 produto-img" />
+                <div>
+                    <p class="font-bold">Açai Tradicional 550ml</p>
+                    <p>Crie sua combinação perfeita e desfrute do melhor do açai!</p>
+                    <div class="flex items-center gap-2 justify-between mt-3">
+                        <p class="font-bold text-lg">R$25,99</p>
+                        <button class="bg-gray-900 px-5 rounded ver-produto-btn"
+                            data-id="4"
+                            data-name="Açai Tradicional 550ml"
+                            data-price="25.99"
+                            data-img="/assets/public.avif"
+                            data-desc="Crie sua combinação perfeita e desfrute do melhor do açai!">
+                            <i class="fa fa-cart-plus text-lg text-white"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-2">
+                <img src="/assets/public.avif" alt="Açaí" class="w-28 h-28 rounded-md hover:scale-110 duration-200 hover:-rotate-3 produto-img" />
+                <div>
+                    <p class="font-bold">Açai Tradicional 770ml</p>
+                    <p>Crie sua combinação perfeita e desfrute do melhor do açai!</p>
+                    <div class="flex items-center gap-2 justify-between mt-3">
+                        <p class="font-bold text-lg">R$29,99</p>
+                        <button class="bg-gray-900 px-5 rounded ver-produto-btn"
+                            data-id="5"
+                            data-name="Açai Tradicional 770ml"
+                            data-price="29.99"
+                            data-img="/assets/public.avif"
+                            data-desc="Crie sua combinação perfeita e desfrute do melhor do açai!">
+                            <i class="fa fa-cart-plus text-lg text-white"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-2">
+                <img src="/assets/public.avif" alt="Açaí" class="w-28 h-28 rounded-md hover:scale-110 duration-200 hover:-rotate-3 produto-img" />
+                <div>
+                    <p class="font-bold">Açai Tradicional 1 Litro</p>
+                    <p>Crie sua combinação perfeita e desfrute do melhor do açai!</p>
+                    <div class="flex items-center gap-2 justify-between mt-3">
+                        <p class="font-bold text-lg">R$55,99</p>
+                        <button class="bg-gray-900 px-5 rounded ver-produto-btn"
+                            data-id="6"
+                            data-name="Açai Tradicional 1 Litro"
+                            data-price="55.99"
+                            data-img="/assets/public.avif"
+                            data-desc="Crie sua combinação perfeita e desfrute do melhor do açai!">
+                            <i class="fa fa-cart-plus text-lg text-white"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- SIMPLESINHOS -->
+        <div class="text-2xl md:text-4xl font-bold text-center mt-9 mb-6">
+            <h3 class="font-bold text-3xl">Simplesinhos</h3>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7 md:gap-10 mx-auto max-w-7xl px-2 mb-16">
+
+            <div class="flex gap-2">
+                <img src="/assets/simplesinho-330.jpg" alt="Açaí 330ml Simplesinho" class="w-28 h-28 rounded-md hover:scale-110 duration-200 hover:-rotate-3 produto-img" />
+                <div>
+                    <p class="font-bold">Açaí 330ml Simplesinho</p>
+                    <p>Nosso copo simplesinho de 330ml acompanha açaí, leite condensado e leite em pó.</p>
+                    <div class="flex items-center gap-2 justify-between mt-3">
+                        <p class="font-bold text-lg">R$ 4,90</p>
+                        <button class="bg-gray-900 px-5 rounded ver-produto-btn"
+                            data-id="11"
+                            data-name="Açaí 330ml Simplesinho"
+                            data-price="4.90"
+                            data-sem-complemento="true"
+                            data-img="/assets/simplesinho-330.jpg"
+                            data-desc="Nosso copo simplesinho de 330ml acompanha açaí, leite condensado e leite em pó.">
+                            <i class="fa fa-cart-plus text-lg text-white"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-2">
+                <img src="/assets/simplesinho-440.jpg" alt="Açaí 440ml Simplesinho" class="w-28 h-28 rounded-md hover:scale-110 duration-200 hover:-rotate-3 produto-img" />
+                <div>
+                    <p class="font-bold">Açaí 440ml Simplesinho</p>
+                    <p>Nosso copo simplesinho de 440ml acompanha açaí, leite condensado e leite em pó.</p>
+                    <div class="flex items-center gap-2 justify-between mt-3">
+                        <p class="font-bold text-lg">R$ 10,00</p>
+                        <button class="bg-gray-900 px-5 rounded ver-produto-btn"
+                            data-id="12"
+                            data-name="Açaí 440ml Simplesinho"
+                            data-price="10.00"
+                            data-sem-complemento="true"
+                            data-img="/assets/simplesinho-440.jpg"
+                            data-desc="Nosso copo simplesinho de 440ml acompanha açaí, leite condensado e leite em pó.">
+                            <i class="fa fa-cart-plus text-lg text-white"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-2">
+                <img src="/assets/simplesinho-500.jpg" alt="Açaí 500ml Simplesinho" class="w-28 h-28 rounded-md hover:scale-110 duration-200 hover:-rotate-3 produto-img" />
+                <div>
+                    <p class="font-bold">Açaí 500ml Simplesinho</p>
+                    <p>Nosso copo simplesinho de 500ml acompanha açaí, leite condensado e leite em pó.</p>
+                    <div class="flex items-center gap-2 justify-between mt-3">
+                        <p class="font-bold text-lg">R$ 21,99</p>
+                        <button class="bg-gray-900 px-5 rounded ver-produto-btn"
+                            data-id="13"
+                            data-name="Açaí 500ml Simplesinho"
+                            data-price="21.99"
+                            data-sem-complemento="true"
+                            data-img="/assets/simplesinho-500.jpg"
+                            data-desc="Nosso copo simplesinho de 500ml acompanha açaí, leite condensado e leite em pó.">
+                            <i class="fa fa-cart-plus text-lg text-white"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-2">
+                <img src="/assets/simplesinho-770.jpg" alt="Açaí 770ml Simplesinho" class="w-28 h-28 rounded-md hover:scale-110 duration-200 hover:-rotate-3 produto-img" />
+                <div>
+                    <p class="font-bold">Açaí 770ml Simplesinho</p>
+                    <p>Nosso copo simplesinho de 770ml acompanha açaí, leite condensado e leite em pó.</p>
+                    <div class="flex items-center gap-2 justify-between mt-3">
+                        <p class="font-bold text-lg">R$ 26,98</p>
+                        <button class="bg-gray-900 px-5 rounded ver-produto-btn"
+                            data-id="14"
+                            data-name="Açaí 770ml Simplesinho"
+                            data-price="26.98"
+                            data-sem-complemento="true"
+                            data-img="/assets/simplesinho-770.jpg"
+                            data-desc="Nosso copo simplesinho de 770ml acompanha açaí, leite condensado e leite em pó.">
+                            <i class="fa fa-cart-plus text-lg text-white"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VITAMINA DE AÇAÍ -->
+        <div class="text-2xl md:text-4xl font-bold text-center mt-9 mb-6">
+            <h3 class="font-bold text-3xl">Vitamina de açaí</h3>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7 md:gap-10 mx-auto max-w-7xl px-2 mb-16">
+            <div class="flex gap-2">
+                <img src="/assets/vitamina-acai-300.jpg" alt="Vitamina de açaí 300ml" class="w-28 h-28 rounded-md hover:scale-110 duration-200 hover:-rotate-3 produto-img" />
+                <div>
+                    <p class="font-bold">Vitamina de açaí 300ml</p>
+                    <p>Deliciosamente refrescante e cremosa, ideal para você que busca mais energia para o seu dia.</p>
+                    <div class="flex items-center gap-2 justify-between mt-3">
+                        <p class="font-bold text-lg">R$21,99</p>
+                        <button
+                            class="bg-gray-900 px-5 rounded ver-produto-btn"
+                            data-id="15"
+                            data-name="Vitamina de açaí 300ml"
+                            data-price="21.99"
+                            data-img="/assets/vitamina-acai-300.jpg"
+                            data-desc="Deliciosamente refrescante e cremosa, ideal para você que busca mais energia para o seu dia."
+                            data-product-type="vitamina"
+                        >
+                            <i class="fa fa-cart-plus text-lg text-white"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- COMBOS -->
+        <div class="text-2xl md:text-4xl font-bold text-center mt-9 mb-6">
+            <h3 class="font-bold text-3xl">Combos</h3>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7 md:gap-10 mx-auto max-w-7xl px-2 mb-16">
+            <div class="flex gap-2 w-full">
+                <img src="/assets/Captura de tela 2025-11-12 213959.png" alt="Combo" class="w-28 h-28 rounded-md hover:scale-110 duration-200 hover:-rotate-3 produto-img" />
+                <div>
+                    <p class="font-bold">Dois copos de 330ml</p>
+                    <p>Combo de dois açaís de 330ml com acompanhamento e fruta.</p>
+                    <div class="flex items-center gap-2 justify-between mt-3">
+                        <p class="font-bold text-lg">R$28,99</p>
+                        <button class="bg-gray-900 px-5 rounded ver-produto-btn-combos"
+                            data-id="7"
+                            data-name="Dois copos de 330ml"
+                            data-price="28.99"
+                            data-img="/assets/Captura de tela 2025-11-12 213959.png"
+                            data-desc="Combo de dois açaís de 330ml com acompanhamento e fruta.">
+                            <i class="fa fa-cart-plus text-lg text-white"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-2">
+                <img src="/assets/Captura de tela 2025-11-12 213959.png" alt="Combo" class="w-28 h-28 rounded-md hover:scale-110 duration-200 hover:-rotate-3 produto-img" />
+                <div>
+                    <p class="font-bold">Dois copos de 440ml</p>
+                    <p>Combo de dois açaís de 440ml com acompanhamento e fruta.</p>
+                    <div class="flex items-center gap-2 justify-between mt-3">
+                        <p class="font-bold text-lg">R$38,98</p>
+                        <button class="bg-gray-900 px-5 rounded ver-produto-btn-combos"
+                            data-id="8"
+                            data-name="Dois copos de 440ml"
+                            data-price="38.98"
+                            data-img="/assets/Captura de tela 2025-11-12 213959.png"
+                            data-desc="Combo de dois açaís de 440ml com acompanhamento e fruta.">
+                            <i class="fa fa-cart-plus text-lg text-white"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SUGESTÕES -->
+        <div class="text-2xl md:text-4xl font-bold text-center mt-9 mb-6">
+            <h3 class="font-bold text-3xl">Sugestões Gelato'S</h3>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7 md:gap-10 mx-auto max-w-7xl px-2 mb-16">
+            <div class="flex gap-2 w-full">
+                <img src="/assets/eac5969a5138c9978767946653c65c03.jpg" alt="Ouromaltine" class="w-28 h-28 rounded-md hover:scale-110 duration-200 hover:-rotate-3 produto-img" />
+                <div>
+                    <p class="font-bold">Ouromaltine 550ml</p>
+                    <p>Nosso copo Ouromaltine acompanha açaí, leite condensado, leite em pó, Ovomaltine e bombom Ouro Branco.</p>
+                    <div class="flex items-center gap-2 justify-between mt-3">
+                        <p class="font-bold text-lg">R$28,99</p>
+                        <button class="bg-gray-900 px-5 rounded ver-produto-btn"
+                            data-id="9"
+                            data-name="Ouromaltine 550ml"
+                            data-price="28.99"
+                            data-img="/assets/eac5969a5138c9978767946653c65c03.jpg"
+                            data-desc="Nosso copo Ouromaltine acompanha açaí, leite condensado, leite em pó, Ovomaltine e bombom Ouro Branco.">
+                            <i class="fa fa-cart-plus text-lg text-white"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-2">
+                <img src="/assets/b4b1dfc457cfc7c8952472aa139daa46.png" alt="Tropical" class="w-28 h-28 rounded-md hover:scale-110 duration-200 hover:-rotate-3 produto-img" />
+                <div>
+                    <p class="font-bold">Tropical 550ml</p>
+                    <p>Montado em um copo de 550ml, com 3 camadas de recheio e 3 frutas.</p>
+                    <div class="flex items-center gap-2 justify-between mt-3">
+                        <p class="font-bold text-lg">R$29,99</p>
+                        <button class="bg-gray-900 px-5 rounded ver-produto-btn"
+                            data-id="10"
+                            data-name="Tropical 550ml"
+                            data-price="29.99"
+                            data-img="/assets/b4b1dfc457cfc7c8952472aa139daa46.png"
+                            data-desc="Montado em um copo de 550ml, com 3 camadas de recheio e 3 frutas.">
+                            <i class="fa fa-cart-plus text-lg text-white"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CARRINHO -->
+    <div class="bg-black/50 w-full h-full fixed top-0 left-0 z-[99] items-center justify-center hidden" id="cart-modal">
+        <div class="bg-white p-4 rounded-md w-[92%] max-w-[420px] md:max-w-[500px] max-h-[85vh] overflow-y-auto">
+            <h2 class="text-center font-bold text-2xl mb-2">Meu carrinho</h2>
+
+            <div id="cart-items" class="flex justify-between mb-2 flex-col"></div>
+
+            <div class="mt-3 space-y-1">
+                <p class="font-medium">Subtotal dos produtos: <span id="cart-subtotal">R$ 0,00</span></p>
+                <p class="font-medium">Taxa de entrega: <span id="delivery-fee">R$ 4,50</span></p>
+                <p class="font-medium text-red-500">Desconto: <span id="cart-discount">R$ 0,00</span></p>
+                <p class="font-bold text-lg">Total: <span id="cart-total">R$ 0,00</span></p>
+            </div>
+
+            <div class="mt-4">
+                <p class="font-bold">Cupom de desconto:</p>
+                <div class="flex gap-2 mt-2">
+                    <input type="text" id="coupon-code" placeholder="Digite seu cupom" class="w-full border-2 p-1 rounded" />
+                    <button id="apply-coupon-btn" class="bg-gray-900 text-white px-4 rounded">Aplicar</button>
+                </div>
+                <p id="coupon-message" class="text-sm mt-2 hidden"></p>
+            </div>
+
+            <p class="font-bold mt-4">Endereço de entrega:</p>
+            <input type="text" placeholder="Digite seu endereço completo..." id="address" class="w-full border-2 p-1 rounded my-2" />
+            <p class="text-red-500 hidden" id="Address-warn">Digite seu endereço completo!</p>
+
+            <input type="text" placeholder="Digite seu bairro..." id="address1" class="w-full border-2 p-1 rounded my-2" />
+            <p class="text-red-500 hidden" id="Address-warn1">Digite seu bairro!</p>
+
+            <input type="text" placeholder="Digite seu CEP..." id="cep" class="w-full border-2 p-1 rounded my-2" />
+            <p class="text-green-600 font-bold">(CEP opcional)</p>
+
+            <input type="text" placeholder="Digite seu número..." id="address2" class="w-full border-2 p-1 rounded my-2" />
+            <p class="text-red-500 hidden" id="Address-warn2">Digite o número!</p>
+
+            <div class="flex items-center justify-between mt-5 w-full">
+                <button id="close-modal-btn">Fechar</button>
+                <button id="checkout-btn" class="bg-green-500 text-white px-4 py-1 rounded">Finalizar Pedido</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DADOS DO CLIENTE -->
+    <div id="customer-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-[99]">
+        <div class="bg-white p-5 rounded-md w-[92%] max-w-[420px] max-h-[85vh] overflow-y-auto">
+            <h2 class="text-center font-bold text-2xl mb-4">Dados do cliente</h2>
+
+            <p class="text-sm text-gray-600 mb-4 text-center">
+                Preencha seus dados para continuar o pedido
+            </p>
+
+            <div class="mb-4">
+                <label for="customer-name" class="font-semibold block mb-1">Nome completo</label>
+                <input type="text" id="customer-name" placeholder="Digite seu nome completo" class="w-full border-2 p-2 rounded" />
+                <p id="customer-name-warn" class="text-red-500 text-sm mt-1 hidden">Informe seu nome completo</p>
+            </div>
+
+            <div class="mb-4">
+                <label for="customer-phone" class="font-semibold block mb-1">Telefone com DDD</label>
+                <input type="tel" id="customer-phone" placeholder="(11) 99999-9999" class="w-full border-2 p-2 rounded" />
+                <p id="customer-phone-warn" class="text-red-500 text-sm mt-1 hidden">Informe um telefone válido com DDD</p>
+            </div>
+
+            <div class="flex items-center justify-between mt-5 w-full">
+                <button id="close-customer-modal">Voltar</button>
+                <button id="go-to-payment-btn" class="bg-green-500 text-white px-4 py-2 rounded">Ir para pagamento</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PAGAMENTO -->
+    <div id="payment-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-[99]">
+        <div class="bg-white p-5 rounded-md min-w-[90%] md:min-w-[600px]">
+            <h2 class="text-center font-bold text-3xl mb-4">Pagamento</h2>
+
+            <p class="text-lg font-bold text-center mb-4">
+                Total do pedido: <span id="payment-total" class="text-green-600"></span>
+            </p>
+
+            <h3 class="font-semibold mb-2">Escolha a forma de pagamento:</h3>
+
+            <div class="flex flex-col gap-2 mb-4">
+                <label class="flex items-center gap-2">
+                    <input type="radio" name="paymethod" value="pix" />
+                    PIX
+                </label>
+
+                <label class="flex items-center gap-2">
+                    <input type="radio" name="paymethod" value="dinheiro" />
+                    Dinheiro
+                </label>
+
+                <label class="flex items-center gap-2">
+                    <input type="radio" name="paymethod" value="cartao" />
+                    Cartão (crédito / débito)
+                </label>
+            </div>
+
+            <div id="pix-warning" class="hidden mt-4 rounded-lg border border-green-300 bg-green-50 p-3 text-sm text-green-800">
+                <p class="font-bold">Pagamento via PIX</p>
+                <p class="mt-1">
+                    PIX da loja: <span class="font-semibold">64.258.108/0001-61</span>
+                </p>
+                <p class="mt-1">
+                    Após finalizar o pedido, envie o comprovante para o WhatsApp da loja para o pedido entrar em produção.
+                </p>
+            </div>
+
+            <div id="troco-area" class="hidden mb-4 mt-4">
+                <label class="font-semibold">Troco para quanto?</label>
+                <input type="number" id="troco-input" placeholder="Ex: 50.00" class="w-full border rounded p-2 mt-1" />
+            </div>
+
+            <div class="flex items-center justify-between mt-5 w-full">
+                <button id="close-payment">Fechar</button>
+                <button id="confirm-payment" class="bg-green-500 text-white px-4 py-1 rounded">Confirmar Pagamento</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PRODUTO -->
+    <div class="bg-black/50 w-full h-full fixed top-0 left-0 z-[99] items-center justify-center hidden" id="cart-modalPRODUTO">
+        <div class="bg-white p-4 rounded-md w-[92%] max-w-[420px] max-h-[85vh] flex flex-col">
+            <div class="flex-1 overflow-y-auto pr-2">
+                <h2 class="text-center font-bold text-2xl mb-2">PRODUTO</h2>
+
+                <img id="modal-produto-img" class="w-40 mx-auto rounded mb-4" alt="Produto" />
+                <p id="modal-produto-name" class="font-bold text-lg text-center mb-2"></p>
+                <p class="text-gray-700 text-center mb-2" id="modal-produto-desc"></p>
+                <p class="font-bold">Total: <span id="modal-produto-preco"></span></p>
+
+                <div id="modal-aviso-limites" class="bg-white text-green-600 text-center font-bold py-2 rounded-md mt-3 text-sm">
+                    ESCOLHA 3 COMPLEMENTOS E 1 FRUTA
+                </div>
+
+                <div id="secao-frutas" class="mt-4">
+                    <button class="accordion-btn flex justify-between items-center w-full font-bold text-lg" data-target="frutas-content">
+                        Frutas
+                        <span class="arrow">▼</span>
+                    </button>
+                    <div id="frutas-content" class="accordion-content hidden mt-2"></div>
+                </div>
+
+                <div id="secao-complementos" class="mt-4">
+                    <button class="accordion-btn flex justify-between items-center w-full font-bold text-lg" data-target="complementos-content">
+                        Complementos
+                        <span class="arrow">▼</span>
+                    </button>
+                    <div id="complementos-content" class="accordion-content hidden mt-2"></div>
+                </div>
+
+                <div id="secao-adicionais" class="mt-4">
+                    <button class="accordion-btn flex justify-between items-center w-full font-bold text-lg" data-target="adicionais-content">
+                        Adicionais
+                        <span class="arrow">▼</span>
+                    </button>
+                    <div id="adicionais-content" class="accordion-content hidden mt-2"></div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between mt-5 w-full">
+                <button id="close-modal-btnProduto">Fechar</button>
+                <button id="checkout-btnPRODUTO" class="bg-green-500 text-white px-4 py-1 rounded">Adicionar no carrinho</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PRODUTO COMBOS -->
+    <div class="bg-black/50 w-full h-full fixed top-0 left-0 z-[99] items-center justify-center hidden" id="cart-modalPRODUTO2">
+        <div class="bg-white p-4 rounded-md w-[92%] max-w-[420px] max-h-[85vh] flex flex-col">
+            <h2 class="text-center font-bold text-2xl mb-2">PRODUTO</h2>
+
+            <div class="flex-1 overflow-y-auto pr-2">
+                <img id="modal-produto-img2" class="w-40 mx-auto rounded mb-4" alt="Combo" />
+                <p id="modal-produto-name2" class="font-bold text-lg text-center mb-2"></p>
+                <p class="text-gray-700 text-center mb-2" id="modal-produto-desc2"></p>
+                <p class="font-bold">Total: <span id="modal-produto-preco2"></span></p>
+
+                <div class="border rounded-lg p-3 mt-4">
+                    <button class="accordion-btn flex justify-between items-center w-full font-bold text-lg" data-target="copo1">
+                        Copo 1
+                        <span class="arrow">▼</span>
+                    </button>
+
+                    <div id="copo1" class="hidden mt-3 space-y-3">
+                        <div>
+                            <button class="accordion-btn flex justify-between items-center w-full font-semibold" data-target="copo1-frutas">
+                                Frutas
+                                <span class="arrow">▼</span>
+                            </button>
+
+                            <div id="copo1-frutas" class="hidden mt-2 space-y-2">
+                                <label class="flex justify-between items-center">
+                                    <span><input type="checkbox" class="fruta-combo" data-copo="1" data-name="Banana" data-price="0" /> Banana</span>
+                                    <span>( + R$ 0,00 )</span>
+                                </label>
+
+                                <label class="flex justify-between items-center">
+                                    <span><input type="checkbox" class="fruta-combo" data-copo="1" data-name="Uva" data-price="0" /> Uva</span>
+                                    <span>( + R$ 0,00 )</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div>
+                            <button class="accordion-btn flex justify-between items-center w-full font-semibold" data-target="copo1-acomp">
+                                Acompanhamento
+                                <span class="arrow">▼</span>
+                            </button>
+
+                            <div id="copo1-acomp" class="hidden mt-2 space-y-2">
+                                <label class="flex justify-between items-center">
+                                    <span><input type="checkbox" class="complemento-combo" data-copo="1" data-name="Leite em pó" data-price="0" /> Leite em pó</span>
+                                    <span>( + R$ 0,00 )</span>
+                                </label>
+
+                                <label class="flex justify-between items-center">
+                                    <span><input type="checkbox" class="complemento-combo" data-copo="1" data-name="Leite condensado" data-price="0" /> Leite condensado</span>
+                                    <span>( + R$ 0,00 )</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div>
+                            <button class="accordion-btn flex justify-between items-center w-full font-semibold" data-target="copo1-add">
+                                Adicionais
+                                <span class="arrow">▼</span>
+                            </button>
+
+                            <div id="copo1-add" class="hidden mt-2 space-y-2">
+                                <label class="flex justify-between items-center">
+                                    <span><input type="checkbox" class="complemento-combo" data-copo="1" data-name="Leite Ninho" data-price="0" /> Leite Ninho</span>
+                                    <span>( + R$ 0,00 )</span>
+                                </label>
+
+                                <label class="flex justify-between items-center">
+                                    <span><input type="checkbox" class="complemento-combo" data-copo="1" data-name="Granola" data-price="0" /> Granola</span>
+                                    <span>( + R$ 0,00 )</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border rounded-lg p-3 mt-4">
+                    <button class="accordion-btn flex justify-between items-center w-full font-bold text-lg" data-target="copo2">
+                        Copo 2
+                        <span class="arrow">▼</span>
+                    </button>
+
+                    <div id="copo2" class="hidden mt-3 space-y-3">
+                        <button class="accordion-btn flex justify-between items-center w-full font-semibold" data-target="copo2-frutas">
+                            Frutas
+                            <span class="arrow">▼</span>
+                        </button>
+
+                        <div id="copo2-frutas" class="hidden mt-2 space-y-2">
+                            <label class="flex justify-between items-center">
+                                <span><input type="checkbox" class="fruta-combo" data-copo="2" data-name="Morango" data-price="0" /> Morango</span>
+                                <span>( + R$ 0,00 )</span>
+                            </label>
+                        </div>
+
+                        <div>
+                            <button class="accordion-btn flex justify-between items-center w-full font-semibold" data-target="copo2-acomp">
+                                Acompanhamento
+                                <span class="arrow">▼</span>
+                            </button>
+
+                            <div id="copo2-acomp" class="hidden mt-2 space-y-2">
+                                <label class="flex justify-between items-center">
+                                    <span><input type="checkbox" class="complemento-combo" data-copo="2" data-name="Leite em pó" data-price="0" /> Leite em pó</span>
+                                    <span>( + R$ 0,00 )</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div>
+                            <button class="accordion-btn flex justify-between items-center w-full font-semibold" data-target="copo2-add">
+                                Adicionais
+                                <span class="arrow">▼</span>
+                            </button>
+
+                            <div id="copo2-add" class="hidden mt-2 space-y-2">
+                                <label class="flex justify-between items-center">
+                                    <span><input type="checkbox" class="complemento-combo" data-copo="2" data-name="Morango Extra" data-price="4" /> Morango</span>
+                                    <span>( + R$ 4,00 )</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between mt-5 w-full">
+                <button id="close-modal-btnProduto2">Fechar</button>
+                <button id="checkout-btnPRODUTO2" class="bg-green-500 text-white px-4 py-1 rounded">Adicionar no carrinho</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL IMAGEM -->
+    <div id="image-modal" class="fixed inset-0 bg-black/70 hidden items-center justify-center z-[999]">
+        <img id="image-modal-img" class="max-w-[90%] max-h-[90%] rounded shadow-lg" alt="Imagem ampliada" />
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="w-full bg-red-400 py-3 fixed bottom-0 z-40 flex items-center justify-center">
+        <button class="flex items-center gap-2 text-white font-bold cursor-pointer" id="cart-btn">
+            (<span id="cart-count">0</span>)
+            Veja Meu Carrinho
+            <i class="fa fa-cart-plus text-lg text-white"></i>
+        </button>
+    </footer>
+
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script src="/script.js"></script>
+</body>
+</html>

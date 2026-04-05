@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+body {
+    background-color: #f6f7f6;
+}
+
+@theme {
+  --background-home: url("/assets/9cc37a26ebad61af3f42afebe95965d9.jpg");
+}
+
+@layer base {
+  button {
+    @apply cursor-pointer;
+  }
+}
