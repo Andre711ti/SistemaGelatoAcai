@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Painel Admin - Gelato's Açaí</title>
+  <link rel="stylesheet" href="./Styles/output.css" />
+</head>
+<body class="bg-gray-100 min-h-screen p-6">
+
+  <div class="max-w-6xl mx-auto">
+    <div class="bg-white rounded-xl shadow p-6 mb-6">
+      <h1 class="text-3xl font-bold mb-4">Painel Administrativo</h1>
+
+      <div id="login-area" class="space-y-3">
+        <input id="admin-email" type="email" placeholder="Email" class="w-full border rounded p-2" />
+        <input id="admin-password" type="password" placeholder="Senha" class="w-full border rounded p-2" />
+        <button id="login-btn" class="bg-green-600 text-white px-4 py-2 rounded">Entrar</button>
+        <p id="login-msg" class="text-sm"></p>
+      </div>
+
+      <div id="admin-area" class="hidden">
+        <div class="flex justify-between items-center mb-4">
+          <p class="font-semibold">Logado como admin</p>
+          <button id="logout-btn" class="bg-red-500 text-white px-4 py-2 rounded">Sair</button>
+        </div>
+
+        <div class="border rounded-lg p-4 mb-6">
+          <h2 class="text-xl font-bold mb-3">Loja</h2>
+          <div class="flex items-center gap-3">
+            <span>Status da loja:</span>
+            <button id="toggle-store-btn" class="px-4 py-2 rounded text-white bg-blue-600">Carregando...</button>
+          </div>
+        </div>
+
+        <div class="border rounded-lg p-4 mb-6">
+          <h2 class="text-xl font-bold mb-3">Produtos por categoria</h2>
+          <div id="products-admin-list" class="space-y-6"></div>
+        </div>
+
+        <div class="border rounded-lg p-4">
+          <h2 class="text-xl font-bold mb-3">Opções dos produtos</h2>
+          <div id="options-admin-list" class="space-y-6"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./admin.js"></script>
+</body>
+</html>

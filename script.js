@@ -1,3 +1,8 @@
+const SUPABASE_URL = "https://hfphuyznxobzgfmmvtxj.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_9_aK9g8DPrP6cxN1c4L4UA_m95mJWtc";
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const menu = document.getElementById("menu");
 const cartBtn = document.getElementById("cart-btn");
 const cartModal = document.getElementById("cart-modal");
 const cartItemsContainer = document.getElementById("cart-items");
@@ -66,967 +71,1194 @@ const fruitsContent = document.getElementById("frutas-content");
 const complementsContent = document.getElementById("complementos-content");
 const additionalsContent = document.getElementById("adicionais-content");
 
-const DELIVERY_FEE = 4.50;
+const comboCup1Container = document.getElementById("combo-cup1-container");
+const comboCup2Container = document.getElementById("combo-cup2-container");
+
+const DELIVERY_FEE = 4.5;
 const WHATSAPP_NUMBER = "5511944842614";
 
 const VALID_COUPONS = {
-    GELATO10: { type: "percent", value: 10 },
-    DESCONTO5: { type: "fixed", value: 5 },
-    ENTREGAZERO: { type: "delivery", value: 4.50 }
+  GELATO10: { type: "percent", value: 10 },
+  DESCONTO5: { type: "fixed", value: 5 },
+  ENTREGAZERO: { type: "delivery", value: 4.5 }
 };
 
 let cart = [];
 let appliedCoupon = null;
 let discountAmount = 0;
+let currentProductData = null;
+let currentComboData = null;
+let categoriesCache = [];
+let storeSettings = null;
 
 // ------------------------
-// UTILITÁRIOS
+// HELPERS
 // ------------------------
 function formatCurrency(value) {
-    return value.toLocaleString("pt-BR", {
-        style: "currency",
-        currency: "BRL"
-    });
+  return Number(value).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL"
+  });
 }
 
 function parsePriceFromText(text) {
-    return parseFloat(
-        text
-            .replace("R$", "")
-            .replace(/\s/g, "")
-            .replace(/\./g, "")
-            .replace(",", ".")
-    );
+  return parseFloat(
+    String(text)
+      .replace("R$", "")
+      .replace(/\s/g, "")
+      .replace(/\./g, "")
+      .replace(",", ".")
+  ) || 0;
 }
 
 function getProductsSubtotal() {
-    return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+  return cart.reduce((total, item) => total + item.price * item.quantity, 0);
 }
 
 function calculateDiscount(subtotal) {
-    if (!appliedCoupon) return 0;
+  if (!appliedCoupon) return 0;
 
-    if (appliedCoupon.type === "percent") {
-        return subtotal * (appliedCoupon.value / 100);
-    }
+  if (appliedCoupon.type === "percent") return subtotal * (appliedCoupon.value / 100);
+  if (appliedCoupon.type === "fixed") return appliedCoupon.value;
+  if (appliedCoupon.type === "delivery") return DELIVERY_FEE;
 
-    if (appliedCoupon.type === "fixed") {
-        return appliedCoupon.value;
-    }
-
-    if (appliedCoupon.type === "delivery") {
-        return DELIVERY_FEE;
-    }
-
-    return 0;
+  return 0;
 }
 
 function updateCouponMessage(message, type = "success") {
-    couponMessage.textContent = message;
-    couponMessage.classList.remove("hidden", "text-green-600", "text-red-500");
+  if (!couponMessage) return;
 
-    if (type === "success") {
-        couponMessage.classList.add("text-green-600");
-    } else {
-        couponMessage.classList.add("text-red-500");
-    }
+  couponMessage.textContent = message;
+  couponMessage.classList.remove("hidden", "text-green-600", "text-red-500");
+  couponMessage.classList.add(type === "success" ? "text-green-600" : "text-red-500");
 }
 
 function resetWarnings() {
-    addressWarn.classList.add("hidden");
-    neighborhoodWarn.classList.add("hidden");
-    numberWarn.classList.add("hidden");
+  addressWarn?.classList.add("hidden");
+  neighborhoodWarn?.classList.add("hidden");
+  numberWarn?.classList.add("hidden");
 
-    addressInput.classList.remove("border-red-500");
-    neighborhoodInput.classList.remove("border-red-500");
-    numberInput.classList.remove("border-red-500");
+  addressInput?.classList.remove("border-red-500");
+  neighborhoodInput?.classList.remove("border-red-500");
+  numberInput?.classList.remove("border-red-500");
 
-    customerNameWarn.classList.add("hidden");
-    customerPhoneWarn.classList.add("hidden");
+  customerNameWarn?.classList.add("hidden");
+  customerPhoneWarn?.classList.add("hidden");
 
-    customerNameInput.classList.remove("border-red-500");
-    customerPhoneInput.classList.remove("border-red-500");
+  customerNameInput?.classList.remove("border-red-500");
+  customerPhoneInput?.classList.remove("border-red-500");
 }
 
 function clearTextInputs() {
-    addressInput.value = "";
-    neighborhoodInput.value = "";
-    numberInput.value = "";
-    cepInput.value = "";
-    customerNameInput.value = "";
-    customerPhoneInput.value = "";
-    trocoInput.value = "";
-    couponCodeInput.value = "";
+  if (addressInput) addressInput.value = "";
+  if (neighborhoodInput) neighborhoodInput.value = "";
+  if (numberInput) numberInput.value = "";
+  if (cepInput) cepInput.value = "";
+  if (customerNameInput) customerNameInput.value = "";
+  if (customerPhoneInput) customerPhoneInput.value = "";
+  if (trocoInput) trocoInput.value = "";
+  if (couponCodeInput) couponCodeInput.value = "";
 }
 
 function resetPaymentOptions() {
-    document.querySelectorAll("input[name='paymethod']").forEach((radio) => {
-        radio.checked = false;
-    });
+  document.querySelectorAll("input[name='paymethod']").forEach((radio) => {
+    radio.checked = false;
+  });
 
-    trocoArea.classList.add("hidden");
-    pixWarning.classList.add("hidden");
+  trocoArea?.classList.add("hidden");
+  pixWarning?.classList.add("hidden");
 }
 
 function resetCouponState() {
-    appliedCoupon = null;
-    discountAmount = 0;
-    couponMessage.textContent = "";
-    couponMessage.classList.add("hidden");
-    couponMessage.classList.remove("text-green-600", "text-red-500");
+  appliedCoupon = null;
+  discountAmount = 0;
+
+  if (!couponMessage) return;
+
+  couponMessage.textContent = "";
+  couponMessage.classList.add("hidden");
+  couponMessage.classList.remove("text-green-600", "text-red-500");
 }
 
 function resetComboSelections() {
-    document.querySelectorAll(".fruta-combo, .complemento-combo").forEach((item) => {
-        item.checked = false;
+  document
+    .querySelectorAll(".fruta-combo, .complemento-combo, .adicional-combo")
+    .forEach((item) => {
+      item.checked = false;
     });
 }
 
-// ------------------------
-// OPÇÕES DINÂMICAS DOS PRODUTOS
-// ------------------------
-function loadDefaultProductOptions() {
-    fruitsContent.innerHTML = `
-        <label class="flex justify-between">
-            <span><input type="checkbox" class="fruta-item" data-name="Banana" data-price="0" /> Banana</span>
-            <span>( + R$ 0,00 )</span>
-        </label>
-
-        <label class="flex justify-between">
-            <span><input type="checkbox" class="fruta-item" data-name="Uva" data-price="0" /> Uva</span>
-            <span>( + R$ 0,00 )</span>
-        </label>
-
-        <label class="flex justify-between">
-            <span><input type="checkbox" class="fruta-item" data-name="Manga" data-price="0" /> Manga</span>
-            <span>( + R$ 0,00 )</span>
-        </label>
-
-        <label class="flex justify-between">
-            <span><input type="checkbox" class="fruta-item" data-name="Não quero fruta" data-price="0" /> Não quero fruta</span>
-        </label>
-    `;
-
-    complementsContent.innerHTML = `
-        <label class="flex justify-between">
-            <span><input type="checkbox" class="complemento-item1" data-name="Leite em Pó" data-price="0" /> Leite em Pó</span>
-            <span>( + R$ 0,00 )</span>
-        </label>
-
-        <label class="flex justify-between">
-            <span><input type="checkbox" class="complemento-item1" data-name="Granola" data-price="0" /> Granola</span>
-            <span>( + R$ 0,00 )</span>
-        </label>
-
-        <label class="flex justify-between">
-            <span><input type="checkbox" class="complemento-item1" data-name="Leite Condensado" data-price="0" /> Leite Condensado</span>
-            <span>( + R$ 0,00 )</span>
-        </label>
-
-        <label class="flex justify-between">
-            <span><input type="checkbox" class="complemento-item1" data-name="Sucrilhos" data-price="0" /> Sucrilhos</span>
-            <span>( + R$ 0,00 )</span>
-        </label>
-
-        <label class="flex justify-between">
-            <span><input type="checkbox" class="complemento-item1" data-name="Paçoca" data-price="0" /> Paçoca</span>
-            <span>( + R$ 0,00 )</span>
-        </label>
-    `;
-
-    additionalsContent.innerHTML = `
-        <label class="flex justify-between">
-            <span><input type="checkbox" class="complemento-item" data-name="Farinha Láctea" data-price="3" /> Farinha Láctea</span>
-            <span>( + R$ 3,00 )</span>
-        </label>
-
-        <label class="flex justify-between">
-            <span><input type="checkbox" class="complemento-item" data-name="Ovomaltine" data-price="3" /> Ovomaltine</span>
-            <span>( + R$ 3,00 )</span>
-        </label>
-
-        <label class="flex justify-between">
-            <span><input type="checkbox" class="complemento-item" data-name="Confete" data-price="3" /> Confete</span>
-            <span>( + R$ 3,00 )</span>
-        </label>
-
-        <label class="flex justify-between">
-            <span><input type="checkbox" class="complemento-item" data-name="Ouro Branco" data-price="3" /> Ouro Branco</span>
-            <span>( + R$ 3,00 )</span>
-        </label>
-
-        <label class="flex justify-between">
-            <span><input type="checkbox" class="complemento-item" data-name="Bis Branco" data-price="3" /> Bis Branco</span>
-            <span>( + R$ 3,00 )</span>
-        </label>
-
-        <label class="flex justify-between">
-            <span><input type="checkbox" class="complemento-item" data-name="Bis Preto" data-price="3" /> Bis Preto</span>
-            <span>( + R$ 3,00 )</span>
-        </label>
-
-        <label class="flex justify-between">
-            <span><input type="checkbox" class="complemento-item" data-name="Creme de Leitinho" data-price="6.50" /> Creme de Leitinho</span>
-            <span>( + R$ 6,50 )</span>
-        </label>
-
-        <label class="flex justify-between">
-            <span><input type="checkbox" class="complemento-item" data-name="Creme de Avelã" data-price="6.50" /> Creme de Avelã</span>
-            <span>( + R$ 6,50 )</span>
-        </label>
-
-        <label class="flex justify-between">
-            <span><input type="checkbox" class="complemento-item" data-name="Morango" data-price="2.50" /> Morango</span>
-            <span>( + R$ 2,50 )</span>
-        </label>
-    `;
+function escapeHtml(text) {
+  return String(text ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
-function loadVitaminaOptions() {
-    fruitsContent.innerHTML = `
-        <label class="flex justify-between">
-            <span><input type="checkbox" class="fruta-item" data-name="Banana" data-price="0" /> Banana</span>
-            <span>( + R$ 0,00 )</span>
-        </label>
+function normalizeImage(url) {
+  if (url && url.trim() !== "") return url;
+  return "https://placehold.co/200x200?text=Gelato%27s";
+}
 
-        <label class="flex justify-between">
-            <span><input type="checkbox" class="fruta-item" data-name="Morango" data-price="2.99" /> Morango</span>
-            <span>( + R$ 2,99 )</span>
-        </label>
+function getCategoryNameById(categoryId) {
+  const category = categoriesCache.find((c) => c.id === categoryId);
+  return category ? category.name : "";
+}
 
-        <label class="flex justify-between">
-            <span><input type="checkbox" class="fruta-item" data-name="Uva" data-price="0" /> Uva</span>
-            <span>( + R$ 0,00 )</span>
-        </label>
+// ------------------------
+// STORE SETTINGS PÚBLICO
+// ------------------------
+async function carregarStoreSettingsPublic() {
+  try {
+    const { data, error } = await supabaseClient
+      .from("store_settings")
+      .select("*")
+      .order("id", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Erro ao carregar store_settings:", error);
+      return;
+    }
+
+    storeSettings = data;
+    aplicarStatusLojaNoCardapio();
+  } catch (err) {
+    console.error("Erro inesperado ao carregar store_settings:", err);
+  }
+}
+
+function aplicarStatusLojaNoCardapio() {
+  if (!storeSettings) return;
+
+  const botoesCompra = document.querySelectorAll(".ver-produto-dinamico-btn");
+  const footerCartBtn = document.getElementById("cart-btn");
+
+  if (!storeSettings.is_open) {
+    botoesCompra.forEach((btn) => {
+      btn.disabled = true;
+      btn.classList.add("opacity-50", "cursor-not-allowed");
+      btn.title = "Loja fechada";
+    });
+
+    if (footerCartBtn) {
+      footerCartBtn.disabled = true;
+      footerCartBtn.classList.add("opacity-50", "cursor-not-allowed");
+      footerCartBtn.title = "Loja fechada";
+    }
+
+    let aviso = document.getElementById("store-closed-warning");
+    if (!aviso) {
+      aviso = document.createElement("div");
+      aviso.id = "store-closed-warning";
+      aviso.className = "max-w-7xl mx-auto px-4 mb-6";
+      aviso.innerHTML = `
+        <div class="bg-red-100 border border-red-300 text-red-700 rounded-lg px-4 py-3 text-center font-semibold">
+          Loja fechada no momento.
+        </div>
+      `;
+
+      const menuContainer = document.getElementById("menu");
+      menuContainer?.parentNode?.insertBefore(aviso, menuContainer);
+    }
+  } else {
+    botoesCompra.forEach((btn) => {
+      btn.disabled = false;
+      btn.classList.remove("opacity-50", "cursor-not-allowed");
+      btn.title = "";
+    });
+
+    if (footerCartBtn) {
+      footerCartBtn.disabled = false;
+      footerCartBtn.classList.remove("opacity-50", "cursor-not-allowed");
+      footerCartBtn.title = "";
+    }
+
+    const aviso = document.getElementById("store-closed-warning");
+    if (aviso) aviso.remove();
+  }
+}
+
+// ------------------------
+// BANCO - CATEGORIES + PRODUCTS
+// ------------------------
+async function carregarCategorias() {
+  try {
+    const { data, error } = await supabaseClient
+      .from("categories")
+      .select("*")
+      .eq("active", true)
+      .order("sort_order", { ascending: true });
+
+    if (error) {
+      console.error("Erro ao carregar categorias:", error);
+      return [];
+    }
+
+    return data || [];
+  } catch (err) {
+    console.error("Erro inesperado ao carregar categorias:", err);
+    return [];
+  }
+}
+
+async function carregarProdutos() {
+  try {
+    const [categorias, produtosResp] = await Promise.all([
+      carregarCategorias(),
+      supabaseClient
+        .from("products")
+        .select("*")
+        .eq("active", true)
+        .order("id", { ascending: true })
+    ]);
+
+    if (produtosResp.error) {
+      console.error("Erro ao carregar produtos:", produtosResp.error);
+      return;
+    }
+
+    categoriesCache = categorias || [];
+
+    console.log("Categorias carregadas:", categorias);
+    console.log("Produtos carregados:", produtosResp.data);
+
+    renderizarProdutosAgrupados(categorias, produtosResp.data || []);
+  } catch (err) {
+    console.error("Erro inesperado ao carregar produtos:", err);
+  }
+}
+
+function renderizarProdutosAgrupados(categorias, produtos) {
+  if (!menu) return;
+
+  menu.innerHTML = "";
+
+  categorias.forEach((categoria) => {
+    const produtosDaCategoria = produtos.filter(
+      (produto) => produto.category_id === categoria.id
+    );
+
+    if (!produtosDaCategoria.length) return;
+
+    const tituloSecao = document.createElement("div");
+    tituloSecao.className = "col-span-full text-2xl md:text-4xl font-bold text-center mt-9 mb-6";
+    tituloSecao.innerHTML = `<h3 class="font-bold text-3xl">${escapeHtml(categoria.name)}</h3>`;
+    menu.appendChild(tituloSecao);
+
+    const grid = document.createElement("div");
+    grid.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7 md:gap-10 mx-auto max-w-7xl px-2 mb-16 col-span-full";
+
+    produtosDaCategoria.forEach((produto) => {
+      const nome = produto.name || "Produto";
+      const descricao = produto.description || "";
+      const preco = Number(produto.price || 0);
+      const img = normalizeImage(produto.image_url);
+      const sizeLabel = produto.size_label || "";
+
+      const card = document.createElement("div");
+      card.className = "flex gap-2";
+
+      card.innerHTML = `
+        <img
+          src="${escapeHtml(img)}"
+          alt="${escapeHtml(nome)}"
+          class="produto-img w-28 h-28 rounded-md hover:scale-110 hover:-rotate-2 duration-300 object-cover cursor-pointer"
+          data-img="${escapeHtml(img)}"
+        />
+
+        <div class="w-full">
+          <p class="font-bold">${escapeHtml(nome)}</p>
+          <p class="text-sm">${escapeHtml(descricao)}</p>
+          ${sizeLabel ? `<p class="text-xs text-gray-500 mt-1">${escapeHtml(sizeLabel)}</p>` : ""}
+
+          <div class="flex items-center gap-2 justify-between mt-3">
+            <p class="font-bold text-lg">R$ ${preco.toFixed(2).replace(".", ",")}</p>
+
+            <button
+              class="bg-gray-900 px-5 rounded ver-produto-dinamico-btn"
+              data-id="${produto.id}"
+              data-category-id="${produto.category_id}"
+              data-name="${escapeHtml(nome)}"
+              data-desc="${escapeHtml(descricao)}"
+              data-price="${preco}"
+              data-img="${escapeHtml(img)}">
+              <i class="fa fa-cart-plus text-lg text-white"></i>
+            </button>
+          </div>
+        </div>
+      `;
+
+      grid.appendChild(card);
+    });
+
+    menu.appendChild(grid);
+  });
+
+  aplicarStatusLojaNoCardapio();
+}
+
+// ------------------------
+// BANCO - PRODUCT OPTIONS
+// ------------------------
+async function carregarOpcoesProduto(productId) {
+  try {
+    const { data, error } = await supabaseClient
+      .from("product_options")
+      .select("*")
+      .eq("product_id", productId)
+      .eq("active", true)
+      .order("sort_order", { ascending: true });
+
+    if (error) {
+      console.error("Erro ao carregar opções do produto:", error);
+      return [];
+    }
+
+    return data || [];
+  } catch (err) {
+    console.error("Erro inesperado ao carregar opções:", err);
+    return [];
+  }
+}
+
+function renderOptionGroup(container, options, inputClass) {
+  if (!container) return;
+
+  if (!options.length) {
+    container.innerHTML = `<p class="text-sm text-gray-500">Nenhuma opção disponível.</p>`;
+    return;
+  }
+
+  container.innerHTML = options
+    .map((option) => `
+      <label class="flex justify-between">
+        <span>
+          <input
+            type="checkbox"
+            class="${inputClass}"
+            data-name="${escapeHtml(option.option_name)}"
+            data-price="${Number(option.price || 0)}"
+            data-max-quantity="${Number(option.max_quantity || 1)}"
+          />
+          ${escapeHtml(option.option_name)}
+        </span>
+        <span>( + ${formatCurrency(option.price || 0)} )</span>
+      </label>
+    `)
+    .join("");
+}
+
+function montarSecoesCombo(options, cupNumber) {
+  const frutas = options.filter((opt) => opt.group_name === `Copo ${cupNumber} - Frutas`);
+  const acompanhamentos = options.filter((opt) => opt.group_name === `Copo ${cupNumber} - Acompanhamento`);
+  const adicionais = options.filter((opt) => opt.group_name === `Copo ${cupNumber} - Adicionais`);
+
+  const renderGroup = (title, list, className) => {
+    if (!list.length) return "";
+
+    return `
+      <div class="mt-3">
+        <button class="accordion-btn flex justify-between items-center w-full font-semibold" data-target="combo-copo${cupNumber}-${title.toLowerCase()}">
+          ${title}
+          <span class="arrow">▼</span>
+        </button>
+
+        <div id="combo-copo${cupNumber}-${title.toLowerCase()}" class="hidden mt-2 space-y-2">
+          ${list.map((option) => `
+            <label class="flex justify-between items-center">
+              <span>
+                <input
+                  type="checkbox"
+                  class="${className}"
+                  data-copo="${cupNumber}"
+                  data-name="${escapeHtml(option.option_name)}"
+                  data-price="${Number(option.price || 0)}"
+                />
+                ${escapeHtml(option.option_name)}
+              </span>
+              <span>( + ${formatCurrency(option.price || 0)} )</span>
+            </label>
+          `).join("")}
+        </div>
+      </div>
     `;
+  };
 
-    complementsContent.innerHTML = `
-        <label class="flex justify-between">
-            <span><input type="checkbox" class="complemento-item1" data-name="Amendoim granulado" data-price="0" /> Amendoim granulado</span>
-            <span>( + R$ 0,00 )</span>
-        </label>
+  return `
+    ${renderGroup("Frutas", frutas, "fruta-combo")}
+    ${renderGroup("Acompanhamento", acompanhamentos, "complemento-combo")}
+    ${renderGroup("Adicionais", adicionais, "adicional-combo")}
+  `;
+}
 
-        <label class="flex justify-between">
-            <span><input type="checkbox" class="complemento-item1" data-name="Granola" data-price="0" /> Granola</span>
-            <span>( + R$ 0,00 )</span>
-        </label>
+async function abrirModalProdutoDinamico({ id, categoryId, name, desc, price, img }) {
+  if (storeSettings && !storeSettings.is_open) {
+    alert("A loja está fechada no momento.");
+    return;
+  }
 
-        <label class="flex justify-between">
-            <span><input type="checkbox" class="complemento-item1" data-name="Paçoca" data-price="0" /> Paçoca</span>
-            <span>( + R$ 0,00 )</span>
-        </label>
-    `;
+  const categoryName = getCategoryNameById(categoryId);
+  const options = await carregarOpcoesProduto(id);
 
-    additionalsContent.innerHTML = `
-        <label class="flex justify-between">
-            <span><input type="checkbox" class="complemento-item" data-name="Creme de Paçoca" data-price="6.99" /> Creme de Paçoca</span>
-            <span>( + R$ 6,99 )</span>
-        </label>
+  if (categoryName.toLowerCase().includes("combo")) {
+    currentComboData = { id, name, desc, price, img };
 
-        <label class="flex justify-between">
-            <span><input type="checkbox" class="complemento-item" data-name="Creme de Leitinho" data-price="6.99" /> Creme de Leitinho</span>
-            <span>( + R$ 6,99 )</span>
-        </label>
+    modalComboName.textContent = name;
+    modalComboDesc.textContent = desc;
+    modalComboImg.src = img;
+    modalComboPrice.dataset.basePrice = price;
+    modalComboPrice.textContent = formatCurrency(price);
 
-        <label class="flex justify-between">
-            <span><input type="checkbox" class="complemento-item" data-name="Ovomaltine" data-price="3.99" /> Ovomaltine</span>
-            <span>( + R$ 3,99 )</span>
-        </label>
-    `;
+    if (comboCup1Container) {
+      comboCup1Container.innerHTML = montarSecoesCombo(options, 1) || `<p class="text-sm text-gray-500">Nenhuma opção no copo 1.</p>`;
+    }
+
+    if (comboCup2Container) {
+      comboCup2Container.innerHTML = montarSecoesCombo(options, 2) || `<p class="text-sm text-gray-500">Nenhuma opção no copo 2.</p>`;
+    }
+
+    comboModal.style.display = "flex";
+    return;
+  }
+
+  currentProductData = { id, name, desc, price, img };
+
+  if (!modalProductName || !modalProductDesc || !modalProductImg || !modalProductPrice || !productModal) {
+    addToCart(name, price, img, null);
+    return;
+  }
+
+  modalProductName.textContent = name;
+  modalProductDesc.textContent = desc;
+  modalProductImg.src = img;
+  modalProductPrice.dataset.basePrice = price;
+  modalProductPrice.textContent = formatCurrency(price);
+
+  const fruitOptions = options.filter((opt) => opt.group_name === "Frutas");
+  const complementOptions = options.filter((opt) => opt.group_name === "Complementos");
+  const additionalOptions = options.filter(
+    (opt) => opt.group_name === "Extras" || opt.group_name === "Adicionais"
+  );
+
+  fruitSection?.classList.toggle("hidden", fruitOptions.length === 0);
+  complementSection?.classList.toggle("hidden", complementOptions.length === 0);
+  additionalSection?.classList.toggle("hidden", additionalOptions.length === 0);
+
+  renderOptionGroup(fruitsContent, fruitOptions, "fruta-item");
+  renderOptionGroup(complementsContent, complementOptions, "complemento-item1");
+  renderOptionGroup(additionalsContent, additionalOptions, "complemento-item");
+
+  if (limitWarning) {
+    const fruitLimit = fruitOptions.length ? Math.max(...fruitOptions.map((x) => Number(x.max_quantity || 1))) : 0;
+    const complementLimit = complementOptions.length ? Math.max(...complementOptions.map((x) => Number(x.max_quantity || 1))) : 0;
+
+    if (fruitOptions.length || complementOptions.length || additionalOptions.length) {
+      limitWarning.classList.remove("hidden");
+      limitWarning.textContent = `ESCOLHA ATÉ ${complementLimit || 0} COMPLEMENTO(S) E ${fruitLimit || 0} FRUTA(S)`;
+    } else {
+      limitWarning.classList.add("hidden");
+    }
+  }
+
+  bindProductOptionEvents(
+    complementOptions.length ? Math.max(...complementOptions.map((x) => Number(x.max_quantity || 1))) : 99,
+    fruitOptions.length ? Math.max(...fruitOptions.map((x) => Number(x.max_quantity || 1))) : 99
+  );
+
+  productModal.style.display = "flex";
+}
+
+// ------------------------
+// FALLBACK
+// ------------------------
+function loadDefaultProductOptions() {
+  if (!fruitsContent || !complementsContent || !additionalsContent) return;
+
+  fruitsContent.innerHTML = "";
+  complementsContent.innerHTML = "";
+  additionalsContent.innerHTML = "";
 }
 
 function bindProductOptionEvents(maxComplements = 3, maxFruits = 1) {
-    document.querySelectorAll(".complemento-item").forEach((item) => {
-        item.addEventListener("change", updateProductTotal);
+  document.querySelectorAll(".complemento-item").forEach((item) => {
+    item.addEventListener("change", updateProductTotal);
+  });
+
+  document.querySelectorAll(".complemento-item1, .fruta-item").forEach((item) => {
+    item.addEventListener("change", () => {
+      const complementItems = document.querySelectorAll(".complemento-item1");
+      const fruitItems = document.querySelectorAll(".fruta-item");
+
+      const selectedComplements = [...complementItems].filter((i) => i.checked).length;
+      const selectedFruits = [...fruitItems].filter((i) => i.checked).length;
+
+      complementItems.forEach((i) => {
+        i.disabled = !i.checked && selectedComplements >= maxComplements;
+      });
+
+      fruitItems.forEach((i) => {
+        i.disabled = !i.checked && selectedFruits >= maxFruits;
+      });
+
+      updateProductTotal();
     });
-
-    document.querySelectorAll(".complemento-item1, .fruta-item").forEach((item) => {
-        item.addEventListener("change", () => {
-            const complementItems = document.querySelectorAll(".complemento-item1");
-            const fruitItems = document.querySelectorAll(".fruta-item");
-
-            const selectedComplements = [...complementItems].filter((i) => i.checked).length;
-            const selectedFruits = [...fruitItems].filter((i) => i.checked).length;
-
-            complementItems.forEach((i) => {
-                i.disabled = !i.checked && selectedComplements >= maxComplements;
-            });
-
-            fruitItems.forEach((i) => {
-                i.disabled = !i.checked && selectedFruits >= maxFruits;
-            });
-        });
-    });
+  });
 }
 
 // ------------------------
 // MODAL DE IMAGEM
 // ------------------------
-document.querySelectorAll(".produto-img").forEach((img) => {
-    img.addEventListener("click", () => {
-        imageModalImg.src = img.src;
-        imageModal.style.display = "flex";
-    });
+document.addEventListener("click", (event) => {
+  const img = event.target.closest(".produto-img");
+  if (!img || !imageModal || !imageModalImg) return;
+
+  imageModalImg.src = img.dataset.img || img.src;
+  imageModal.style.display = "flex";
 });
 
-imageModal.addEventListener("click", (event) => {
-    if (event.target === imageModal) {
-        imageModal.style.display = "none";
-    }
+imageModal?.addEventListener("click", (event) => {
+  if (event.target === imageModal) {
+    imageModal.style.display = "none";
+  }
 });
 
 // ------------------------
 // CARRINHO
 // ------------------------
 function addToCart(name, price, img, complementos = null) {
-    cart.push({
-        id: Date.now() + Math.floor(Math.random() * 1000),
-        name,
-        price,
-        img,
-        complementos,
-        quantity: 1
-    });
+  cart.push({
+    id: Date.now() + Math.floor(Math.random() * 1000),
+    name,
+    price,
+    img,
+    complementos,
+    quantity: 1
+  });
 
-    updateCartModal();
+  updateCartModal();
 }
 
 function renderComboList(comboData) {
-    let html = `<ul class="ml-4">`;
+  let html = `<ul class="ml-4">`;
 
-    if (comboData.frutas?.length) {
-        html += `<li>Frutas: ${comboData.frutas.map((item) => item.name).join(", ")}</li>`;
-    }
+  if (comboData.frutas?.length) {
+    html += `<li>Frutas: ${comboData.frutas.map((item) => item.name).join(", ")}</li>`;
+  }
 
-    if (comboData.complementos?.length) {
-        html += `<li>Complementos: ${comboData.complementos.map((item) => item.name).join(", ")}</li>`;
-    }
+  if (comboData.complementos?.length) {
+    html += `<li>Complementos: ${comboData.complementos.map((item) => item.name).join(", ")}</li>`;
+  }
 
-    if (comboData.adicionais?.length) {
-        html += `<li>Adicionais: ${comboData.adicionais.map((item) => item.name).join(", ")}</li>`;
-    }
+  if (comboData.adicionais?.length) {
+    html += `<li>Adicionais: ${comboData.adicionais.map((item) => item.name).join(", ")}</li>`;
+  }
 
-    html += `</ul>`;
-    return html;
+  html += `</ul>`;
+  return html;
 }
 
 function renderComplementos(complementos) {
-    if (!complementos) return "";
+  if (!complementos) return "";
 
-    let html = `<div class="mt-2 text-sm text-gray-700">`;
+  let html = `<div class="mt-2 text-sm text-gray-700">`;
 
-    if (complementos.frutas?.length) {
-        html += `
-            <p class="font-semibold">Frutas:</p>
-            <ul class="ml-4">
-                ${complementos.frutas.map((fruit) => `<li>- ${fruit.name}${fruit.price > 0 ? ` (+R$ ${fruit.price.toFixed(2)})` : ""}</li>`).join("")}
-            </ul>
-        `;
+  if (complementos.frutas?.length) {
+    html += `
+      <p class="font-semibold">Frutas:</p>
+      <ul class="ml-4">
+        ${complementos.frutas.map((fruit) => `<li>- ${fruit.name}${fruit.price > 0 ? ` (+R$ ${fruit.price.toFixed(2)})` : ""}</li>`).join("")}
+      </ul>
+    `;
+  }
+
+  if (complementos.complementos?.length) {
+    html += `
+      <p class="font-semibold mt-1">Complementos:</p>
+      <ul class="ml-4">
+        ${complementos.complementos.map((item) => `<li>- ${item.name}</li>`).join("")}
+      </ul>
+    `;
+  }
+
+  if (complementos.adicionais?.length) {
+    html += `
+      <p class="font-semibold mt-1">Adicionais:</p>
+      <ul class="ml-4">
+        ${complementos.adicionais.map((item) => `<li>- ${item.name} (+R$ ${item.price.toFixed(2)})</li>`).join("")}
+      </ul>
+    `;
+  }
+
+  if (complementos.comboCup1 || complementos.comboCup2) {
+    if (complementos.comboCup1) {
+      html += `<p class="font-semibold mt-1">Copo 1:</p>${renderComboList(complementos.comboCup1)}`;
     }
-
-    if (complementos.complementos?.length) {
-        html += `
-            <p class="font-semibold mt-1">Complementos:</p>
-            <ul class="ml-4">
-                ${complementos.complementos.map((item) => `<li>- ${item.name}</li>`).join("")}
-            </ul>
-        `;
+    if (complementos.comboCup2) {
+      html += `<p class="font-semibold mt-1">Copo 2:</p>${renderComboList(complementos.comboCup2)}`;
     }
+  }
 
-    if (complementos.adicionais?.length) {
-        html += `
-            <p class="font-semibold mt-1">Adicionais:</p>
-            <ul class="ml-4">
-                ${complementos.adicionais.map((item) => `<li>- ${item.name} (+R$ ${item.price.toFixed(2)})</li>`).join("")}
-            </ul>
-        `;
-    }
-
-    if (complementos.comboCup1 || complementos.comboCup2) {
-        if (complementos.comboCup1) {
-            html += `<p class="font-semibold mt-1">Copo 1:</p>${renderComboList(complementos.comboCup1)}`;
-        }
-
-        if (complementos.comboCup2) {
-            html += `<p class="font-semibold mt-1">Copo 2:</p>${renderComboList(complementos.comboCup2)}`;
-        }
-    }
-
-    html += `</div>`;
-    return html;
+  html += `</div>`;
+  return html;
 }
 
 function updateCartModal() {
-    cartItemsContainer.innerHTML = "";
+  if (!cartItemsContainer) return;
 
-    cart.forEach((item) => {
-        const cartItemElement = document.createElement("div");
-        cartItemElement.classList.add("flex", "justify-between", "mb-4", "flex-col");
+  cartItemsContainer.innerHTML = "";
 
-        cartItemElement.innerHTML = `
-            <div class="flex gap-3 items-start">
-                <img src="${item.img}" class="w-20 h-20 rounded object-cover" alt="${item.name}">
-                <div class="flex-1">
-                    <div class="flex justify-between items-start">
-                        <p class="font-bold">${item.name}</p>
-                        <button class="remove-btn text-red-500 text-sm" data-id="${item.id}">
-                            Remover
-                        </button>
-                    </div>
+  cart.forEach((item) => {
+    const cartItemElement = document.createElement("div");
+    cartItemElement.classList.add("flex", "justify-between", "mb-4", "flex-col");
 
-                    <div class="flex items-center gap-2 mt-1">
-                        <button class="decrease bg-gray-200 px-2 rounded" data-id="${item.id}">-</button>
-                        <span>${item.quantity}</span>
-                        <button class="increase bg-gray-200 px-2 rounded" data-id="${item.id}">+</button>
-                    </div>
+    cartItemElement.innerHTML = `
+      <div class="flex gap-3 items-start">
+        <img src="${item.img}" class="w-20 h-20 rounded object-cover" alt="${escapeHtml(item.name)}">
+        <div class="flex-1">
+          <div class="flex justify-between items-start">
+            <p class="font-bold">${escapeHtml(item.name)}</p>
+            <button class="remove-btn text-red-500 text-sm" data-id="${item.id}">
+              Remover
+            </button>
+          </div>
 
-                    <p class="font-medium mt-1">${formatCurrency(item.price)}</p>
-                    ${item.complementos ? renderComplementos(item.complementos) : ""}
-                </div>
-            </div>
-        `;
+          <div class="flex items-center gap-2 mt-1">
+            <button class="decrease bg-gray-200 px-2 rounded" data-id="${item.id}">-</button>
+            <span>${item.quantity}</span>
+            <button class="increase bg-gray-200 px-2 rounded" data-id="${item.id}">+</button>
+          </div>
 
-        cartItemsContainer.appendChild(cartItemElement);
-    });
+          <p class="font-medium mt-1">${formatCurrency(item.price)}</p>
+          ${item.complementos ? renderComplementos(item.complementos) : ""}
+        </div>
+      </div>
+    `;
 
-    const subtotal = getProductsSubtotal();
-    discountAmount = Math.min(calculateDiscount(subtotal), subtotal + DELIVERY_FEE);
-    const total = subtotal + DELIVERY_FEE - discountAmount;
+    cartItemsContainer.appendChild(cartItemElement);
+  });
 
-    cartSubtotalElement.textContent = formatCurrency(subtotal);
-    deliveryFeeElement.textContent = formatCurrency(DELIVERY_FEE);
-    cartDiscountElement.textContent = `- ${formatCurrency(discountAmount)}`;
-    cartTotalElement.textContent = formatCurrency(total);
-    cartCounter.textContent = cart.reduce((acc, item) => acc + item.quantity, 0);
+  const subtotal = getProductsSubtotal();
+  discountAmount = Math.min(calculateDiscount(subtotal), subtotal + DELIVERY_FEE);
+  const total = subtotal + DELIVERY_FEE - discountAmount;
+
+  if (cartSubtotalElement) cartSubtotalElement.textContent = formatCurrency(subtotal);
+  if (deliveryFeeElement) deliveryFeeElement.textContent = formatCurrency(DELIVERY_FEE);
+  if (cartDiscountElement) cartDiscountElement.textContent = `- ${formatCurrency(discountAmount)}`;
+  if (cartTotalElement) cartTotalElement.textContent = formatCurrency(total);
+  if (cartCounter) cartCounter.textContent = cart.reduce((acc, item) => acc + item.quantity, 0);
 }
 
-cartBtn.addEventListener("click", () => {
-    cartModal.style.display = "flex";
-    updateCartModal();
+cartBtn?.addEventListener("click", () => {
+  if (storeSettings && !storeSettings.is_open) {
+    alert("A loja está fechada no momento.");
+    return;
+  }
+
+  cartModal.style.display = "flex";
+  updateCartModal();
 });
 
-closeModalBtn.addEventListener("click", () => {
+closeModalBtn?.addEventListener("click", () => {
+  cartModal.style.display = "none";
+});
+
+cartModal?.addEventListener("click", (event) => {
+  if (event.target === cartModal) {
     cartModal.style.display = "none";
+  }
 });
 
-cartModal.addEventListener("click", (event) => {
-    if (event.target === cartModal) {
-        cartModal.style.display = "none";
-    }
-});
+cartItemsContainer?.addEventListener("click", (event) => {
+  const removeBtn = event.target.closest(".remove-btn");
+  const increaseBtn = event.target.closest(".increase");
+  const decreaseBtn = event.target.closest(".decrease");
 
-cartItemsContainer.addEventListener("click", (event) => {
-    const removeBtn = event.target.closest(".remove-btn");
-    const increaseBtn = event.target.closest(".increase");
-    const decreaseBtn = event.target.closest(".decrease");
+  if (removeBtn) {
+    const id = Number(removeBtn.dataset.id);
+    cart = cart.filter((item) => item.id !== id);
+    updateCartModal();
+    return;
+  }
 
-    if (removeBtn) {
-        const id = Number(removeBtn.dataset.id);
-        cart = cart.filter((item) => item.id !== id);
-        updateCartModal();
-        return;
+  if (increaseBtn) {
+    const id = Number(increaseBtn.dataset.id);
+    const item = cart.find((cartItem) => cartItem.id === id);
+    if (item) {
+      item.quantity++;
+      updateCartModal();
     }
+    return;
+  }
 
-    if (increaseBtn) {
-        const id = Number(increaseBtn.dataset.id);
-        const item = cart.find((cartItem) => cartItem.id === id);
-        if (item) {
-            item.quantity++;
-            updateCartModal();
-        }
-        return;
+  if (decreaseBtn) {
+    const id = Number(decreaseBtn.dataset.id);
+    const item = cart.find((cartItem) => cartItem.id === id);
+    if (item) {
+      if (item.quantity > 1) {
+        item.quantity--;
+      } else {
+        cart = cart.filter((cartItem) => cartItem.id !== id);
+      }
+      updateCartModal();
     }
-
-    if (decreaseBtn) {
-        const id = Number(decreaseBtn.dataset.id);
-        const item = cart.find((cartItem) => cartItem.id === id);
-        if (item) {
-            if (item.quantity > 1) {
-                item.quantity--;
-            } else {
-                cart = cart.filter((cartItem) => cartItem.id !== id);
-            }
-            updateCartModal();
-        }
-    }
+  }
 });
 
 // ------------------------
 // CUPOM
 // ------------------------
-applyCouponBtn.addEventListener("click", () => {
-    const coupon = couponCodeInput.value.trim().toUpperCase();
-    const subtotal = getProductsSubtotal();
+applyCouponBtn?.addEventListener("click", () => {
+  const coupon = couponCodeInput.value.trim().toUpperCase();
+  const subtotal = getProductsSubtotal();
 
-    if (subtotal <= 0) {
-        updateCouponMessage("Adicione produtos ao carrinho antes de aplicar um cupom.", "error");
-        return;
-    }
+  if (subtotal <= 0) {
+    updateCouponMessage("Adicione produtos ao carrinho antes de aplicar um cupom.", "error");
+    return;
+  }
 
-    if (!coupon) {
-        appliedCoupon = null;
-        discountAmount = 0;
-        updateCouponMessage("Digite um cupom para aplicar.", "error");
-        updateCartModal();
-        return;
-    }
-
-    if (!VALID_COUPONS[coupon]) {
-        appliedCoupon = null;
-        discountAmount = 0;
-        updateCouponMessage("Cupom inválido.", "error");
-        updateCartModal();
-        return;
-    }
-
-    appliedCoupon = {
-        code: coupon,
-        ...VALID_COUPONS[coupon]
-    };
-
-    discountAmount = calculateDiscount(subtotal);
-    updateCouponMessage(`Cupom ${coupon} aplicado com sucesso!`);
+  if (!coupon) {
+    appliedCoupon = null;
+    discountAmount = 0;
+    updateCouponMessage("Digite um cupom para aplicar.", "error");
     updateCartModal();
+    return;
+  }
+
+  if (!VALID_COUPONS[coupon]) {
+    appliedCoupon = null;
+    discountAmount = 0;
+    updateCouponMessage("Cupom inválido.", "error");
+    updateCartModal();
+    return;
+  }
+
+  appliedCoupon = {
+    code: coupon,
+    ...VALID_COUPONS[coupon]
+  };
+
+  discountAmount = calculateDiscount(subtotal);
+  updateCouponMessage(`Cupom ${coupon} aplicado com sucesso!`);
+  updateCartModal();
 });
 
 // ------------------------
 // PRODUTO NORMAL
 // ------------------------
 function updateProductTotal() {
-    const basePrice = parseFloat(modalProductPrice.dataset.basePrice);
-    let extras = 0;
+  if (!modalProductPrice) return;
 
-    document.querySelectorAll(".complemento-item").forEach((item) => {
-        if (item.checked) {
-            extras += parseFloat(item.dataset.price || 0);
-        }
-    });
+  const basePrice = parseFloat(modalProductPrice.dataset.basePrice || 0);
+  let extras = 0;
 
-    document.querySelectorAll(".fruta-item").forEach((item) => {
-        if (item.checked) {
-            extras += parseFloat(item.dataset.price || 0);
-        }
-    });
+  document.querySelectorAll(".complemento-item").forEach((item) => {
+    if (item.checked) extras += parseFloat(item.dataset.price || 0);
+  });
 
-    modalProductPrice.textContent = formatCurrency(basePrice + extras);
+  document.querySelectorAll(".fruta-item").forEach((item) => {
+    if (item.checked) extras += parseFloat(item.dataset.price || 0);
+  });
+
+  modalProductPrice.textContent = formatCurrency(basePrice + extras);
 }
 
-closeProductModalBtn.addEventListener("click", () => {
+closeProductModalBtn?.addEventListener("click", () => {
+  productModal.style.display = "none";
+});
+
+productModal?.addEventListener("click", (event) => {
+  if (event.target === productModal) {
     productModal.style.display = "none";
+  }
 });
 
-productModal.addEventListener("click", (event) => {
-    if (event.target === productModal) {
-        productModal.style.display = "none";
-    }
+document.addEventListener("click", async (event) => {
+  const button = event.target.closest(".ver-produto-dinamico-btn");
+  if (!button) return;
+
+  if (storeSettings && !storeSettings.is_open) {
+    alert("A loja está fechada no momento.");
+    return;
+  }
+
+  const productId = Number(button.getAttribute("data-id"));
+  const categoryId = Number(button.getAttribute("data-category-id"));
+  const name = button.getAttribute("data-name") || "Produto";
+  const price = parseFloat(button.getAttribute("data-price") || 0);
+  const desc = button.getAttribute("data-desc") || "";
+  const img = button.getAttribute("data-img") || "https://placehold.co/200x200?text=Gelato%27s";
+
+  await abrirModalProdutoDinamico({
+    id: productId,
+    categoryId,
+    name,
+    desc,
+    price,
+    img
+  });
 });
 
-document.querySelectorAll(".ver-produto-btn").forEach((button) => {
-    button.addEventListener("click", () => {
-        const name = button.getAttribute("data-name");
-        const price = parseFloat(button.getAttribute("data-price"));
-        const desc = button.getAttribute("data-desc");
-        const img = button.getAttribute("data-img");
-        const noComplements = button.dataset.semComplemento === "true";
-        const productType = button.dataset.productType || "";
+document.getElementById("checkout-btnPRODUTO")?.addEventListener("click", () => {
+  const name = modalProductName.textContent;
+  const price = parsePriceFromText(modalProductPrice.textContent);
+  const img = modalProductImg.src;
 
-        modalProductName.textContent = name;
-        modalProductDesc.textContent = desc;
-        modalProductImg.src = img;
-        modalProductPrice.dataset.basePrice = price;
-        modalProductPrice.textContent = formatCurrency(price);
+  const noComplements =
+    fruitSection.classList.contains("hidden") &&
+    complementSection.classList.contains("hidden") &&
+    additionalSection.classList.contains("hidden");
 
-        if (noComplements) {
-            fruitSection.classList.add("hidden");
-            complementSection.classList.add("hidden");
-            additionalSection.classList.add("hidden");
-            limitWarning.classList.add("hidden");
-        } else {
-            fruitSection.classList.remove("hidden");
-            complementSection.classList.remove("hidden");
-            additionalSection.classList.remove("hidden");
-            limitWarning.classList.remove("hidden");
-
-            if (productType === "vitamina") {
-                loadVitaminaOptions();
-                limitWarning.textContent = "ESCOLHA 1 FRUTA E 1 COMPLEMENTO";
-                bindProductOptionEvents(1, 1);
-            } else {
-                loadDefaultProductOptions();
-                limitWarning.textContent = "ESCOLHA 3 COMPLEMENTOS E 1 FRUTA";
-                bindProductOptionEvents(3, 1);
-            }
-        }
-
-        productModal.style.display = "flex";
-    });
-});
-
-document.getElementById("checkout-btnPRODUTO").addEventListener("click", () => {
-    const name = modalProductName.textContent;
-    const price = parsePriceFromText(modalProductPrice.textContent);
-    const img = modalProductImg.src;
-
-    const noComplements =
-        fruitSection.classList.contains("hidden") &&
-        complementSection.classList.contains("hidden") &&
-        additionalSection.classList.contains("hidden");
-
-    if (noComplements) {
-        addToCart(name, price, img, null);
-        productModal.style.display = "none";
-        return;
-    }
-
-    const complementos = {
-        frutas: [],
-        complementos: [],
-        adicionais: []
-    };
-
-    document.querySelectorAll(".fruta-item").forEach((item) => {
-        if (item.checked) {
-            complementos.frutas.push({
-                name: item.dataset.name,
-                price: parseFloat(item.dataset.price || 0)
-            });
-        }
-    });
-
-    document.querySelectorAll(".complemento-item1").forEach((item) => {
-        if (item.checked) {
-            complementos.complementos.push({
-                name: item.dataset.name,
-                price: 0
-            });
-        }
-    });
-
-    document.querySelectorAll(".complemento-item").forEach((item) => {
-        if (item.checked) {
-            complementos.adicionais.push({
-                name: item.dataset.name,
-                price: parseFloat(item.dataset.price || 0)
-            });
-        }
-    });
-
-    addToCart(name, price, img, complementos);
+  if (noComplements) {
+    addToCart(name, price, img, null);
     productModal.style.display = "none";
+    return;
+  }
+
+  const complementos = {
+    frutas: [],
+    complementos: [],
+    adicionais: []
+  };
+
+  document.querySelectorAll(".fruta-item").forEach((item) => {
+    if (item.checked) {
+      complementos.frutas.push({
+        name: item.dataset.name,
+        price: parseFloat(item.dataset.price || 0)
+      });
+    }
+  });
+
+  document.querySelectorAll(".complemento-item1").forEach((item) => {
+    if (item.checked) {
+      complementos.complementos.push({
+        name: item.dataset.name,
+        price: parseFloat(item.dataset.price || 0)
+      });
+    }
+  });
+
+  document.querySelectorAll(".complemento-item").forEach((item) => {
+    if (item.checked) {
+      complementos.adicionais.push({
+        name: item.dataset.name,
+        price: parseFloat(item.dataset.price || 0)
+      });
+    }
+  });
+
+  addToCart(name, price, img, complementos);
+  productModal.style.display = "none";
 });
 
 // ------------------------
 // PRODUTO COMBO
 // ------------------------
 function updateComboTotal() {
-    const basePrice = parseFloat(modalComboPrice.dataset.basePrice);
-    let extras = 0;
+  if (!modalComboPrice) return;
 
-    document.querySelectorAll(".complemento-combo").forEach((item) => {
-        if (item.checked) {
-            extras += parseFloat(item.dataset.price || 0);
-        }
-    });
+  const basePrice = parseFloat(modalComboPrice.dataset.basePrice || 0);
+  let extras = 0;
 
-    modalComboPrice.textContent = formatCurrency(basePrice + extras);
+  document.querySelectorAll(".complemento-combo, .adicional-combo").forEach((item) => {
+    if (item.checked) {
+      extras += parseFloat(item.dataset.price || 0);
+    }
+  });
+
+  modalComboPrice.textContent = formatCurrency(basePrice + extras);
 }
 
-closeComboModalBtn.addEventListener("click", () => {
-    comboModal.style.display = "none";
+closeComboModalBtn?.addEventListener("click", () => {
+  comboModal.style.display = "none";
 });
 
-comboModal.addEventListener("click", (event) => {
-    if (event.target === comboModal) {
-        comboModal.style.display = "none";
+comboModal?.addEventListener("click", (event) => {
+  if (event.target === comboModal) {
+    comboModal.style.display = "none";
+  }
+});
+
+document.addEventListener("change", (event) => {
+  if (
+    event.target.matches(".fruta-combo") ||
+    event.target.matches(".complemento-combo") ||
+    event.target.matches(".adicional-combo")
+  ) {
+    updateComboTotal();
+  }
+});
+
+document.getElementById("checkout-btnPRODUTO2")?.addEventListener("click", () => {
+  const name = modalComboName.textContent;
+  const price = parsePriceFromText(modalComboPrice.textContent);
+  const img = modalComboImg.src;
+
+  const complementos = {
+    comboCup1: { frutas: [], complementos: [], adicionais: [] },
+    comboCup2: { frutas: [], complementos: [], adicionais: [] }
+  };
+
+  document.querySelectorAll(".fruta-combo").forEach((item) => {
+    if (item.checked) {
+      const cup = item.dataset.copo === "1" ? "comboCup1" : "comboCup2";
+      complementos[cup].frutas.push({
+        name: item.dataset.name,
+        price: parseFloat(item.dataset.price || 0)
+      });
     }
-});
+  });
 
-document.querySelectorAll(".ver-produto-btn-combos").forEach((button) => {
-    button.addEventListener("click", () => {
-        resetComboSelections();
+  document.querySelectorAll(".complemento-combo").forEach((item) => {
+    if (item.checked) {
+      const cup = item.dataset.copo === "1" ? "comboCup1" : "comboCup2";
+      complementos[cup].complementos.push({
+        name: item.dataset.name,
+        price: parseFloat(item.dataset.price || 0)
+      });
+    }
+  });
 
-        const name = button.getAttribute("data-name");
-        const price = parseFloat(button.getAttribute("data-price"));
-        const desc = button.getAttribute("data-desc");
-        const img = button.getAttribute("data-img");
+  document.querySelectorAll(".adicional-combo").forEach((item) => {
+    if (item.checked) {
+      const cup = item.dataset.copo === "1" ? "comboCup1" : "comboCup2";
+      complementos[cup].adicionais.push({
+        name: item.dataset.name,
+        price: parseFloat(item.dataset.price || 0)
+      });
+    }
+  });
 
-        modalComboName.textContent = name;
-        modalComboDesc.textContent = desc;
-        modalComboImg.src = img;
-        modalComboPrice.dataset.basePrice = price;
-        modalComboPrice.textContent = formatCurrency(price);
-
-        comboModal.style.display = "flex";
-    });
-});
-
-document.querySelectorAll(".complemento-combo").forEach((item) => {
-    item.addEventListener("change", updateComboTotal);
-});
-
-document.getElementById("checkout-btnPRODUTO2").addEventListener("click", () => {
-    const name = modalComboName.textContent;
-    const price = parsePriceFromText(modalComboPrice.textContent);
-    const img = modalComboImg.src;
-
-    const complementos = {
-        comboCup1: { frutas: [], complementos: [], adicionais: [] },
-        comboCup2: { frutas: [], complementos: [], adicionais: [] }
-    };
-
-    document.querySelectorAll(".fruta-combo").forEach((item) => {
-        if (item.checked) {
-            const cup = item.dataset.copo === "1" ? "comboCup1" : "comboCup2";
-            complementos[cup].frutas.push({
-                name: item.dataset.name,
-                price: parseFloat(item.dataset.price || 0)
-            });
-        }
-    });
-
-    document.querySelectorAll(".complemento-combo").forEach((item) => {
-        if (item.checked) {
-            const cup = item.dataset.copo === "1" ? "comboCup1" : "comboCup2";
-            const priceItem = parseFloat(item.dataset.price || 0);
-
-            if (priceItem > 0) {
-                complementos[cup].adicionais.push({
-                    name: item.dataset.name,
-                    price: priceItem
-                });
-            } else {
-                complementos[cup].complementos.push({
-                    name: item.dataset.name,
-                    price: priceItem
-                });
-            }
-        }
-    });
-
-    addToCart(name, price, img, complementos);
-    comboModal.style.display = "none";
+  addToCart(name, price, img, complementos);
+  comboModal.style.display = "none";
 });
 
 // ------------------------
 // ACCORDION
 // ------------------------
-document.querySelectorAll(".accordion-btn").forEach((button) => {
-    button.addEventListener("click", () => {
-        const targetId = button.dataset.target;
-        const content = document.getElementById(targetId);
-        const arrow = button.querySelector(".arrow");
+document.addEventListener("click", (event) => {
+  const button = event.target.closest(".accordion-btn");
+  if (!button) return;
 
-        if (!content) return;
+  const targetId = button.dataset.target;
+  const content = document.getElementById(targetId);
+  const arrow = button.querySelector(".arrow");
 
-        content.classList.toggle("hidden");
+  if (!content) return;
 
-        if (arrow) {
-            arrow.textContent = content.classList.contains("hidden") ? "▼" : "▲";
-        }
-    });
+  content.classList.toggle("hidden");
+
+  if (arrow) {
+    arrow.textContent = content.classList.contains("hidden") ? "▼" : "▲";
+  }
 });
 
 // ------------------------
 // CHECKOUT
 // ------------------------
-checkoutBtn.addEventListener("click", () => {
-    resetWarnings();
+checkoutBtn?.addEventListener("click", () => {
+  resetWarnings();
 
-    if (cart.length === 0) {
-        alert("Seu carrinho está vazio!");
-        return;
-    }
+  if (storeSettings && !storeSettings.is_open) {
+    alert("A loja está fechada no momento.");
+    return;
+  }
 
-    let valid = true;
+  if (cart.length === 0) {
+    alert("Seu carrinho está vazio!");
+    return;
+  }
 
-    if (addressInput.value.trim() === "") {
-        addressWarn.classList.remove("hidden");
-        addressInput.classList.add("border-red-500");
-        valid = false;
-    }
+  let valid = true;
 
-    if (neighborhoodInput.value.trim() === "") {
-        neighborhoodWarn.classList.remove("hidden");
-        neighborhoodInput.classList.add("border-red-500");
-        valid = false;
-    }
+  if (addressInput.value.trim() === "") {
+    addressWarn.classList.remove("hidden");
+    addressInput.classList.add("border-red-500");
+    valid = false;
+  }
 
-    if (numberInput.value.trim() === "") {
-        numberWarn.classList.remove("hidden");
-        numberInput.classList.add("border-red-500");
-        valid = false;
-    }
+  if (neighborhoodInput.value.trim() === "") {
+    neighborhoodWarn.classList.remove("hidden");
+    neighborhoodInput.classList.add("border-red-500");
+    valid = false;
+  }
 
-    if (!valid) return;
+  if (numberInput.value.trim() === "") {
+    numberWarn.classList.remove("hidden");
+    numberInput.classList.add("border-red-500");
+    valid = false;
+  }
 
-    cartModal.style.display = "none";
-    customerModal.style.display = "flex";
+  if (!valid) return;
+
+  cartModal.style.display = "none";
+  customerModal.style.display = "flex";
 });
 
-goToPaymentBtn.addEventListener("click", () => {
-    resetWarnings();
+goToPaymentBtn?.addEventListener("click", () => {
+  resetWarnings();
 
-    const name = customerNameInput.value.trim();
-    const phone = customerPhoneInput.value.trim().replace(/\D/g, "");
+  const name = customerNameInput.value.trim();
+  const phone = customerPhoneInput.value.trim().replace(/\D/g, "");
 
-    let valid = true;
+  let valid = true;
 
-    if (name.length < 5) {
-        customerNameWarn.classList.remove("hidden");
-        customerNameInput.classList.add("border-red-500");
-        valid = false;
-    }
+  if (name.length < 5) {
+    customerNameWarn.classList.remove("hidden");
+    customerNameInput.classList.add("border-red-500");
+    valid = false;
+  }
 
-    if (phone.length < 10 || phone.length > 11) {
-        customerPhoneWarn.classList.remove("hidden");
-        customerPhoneInput.classList.add("border-red-500");
-        valid = false;
-    }
+  if (phone.length < 10 || phone.length > 11) {
+    customerPhoneWarn.classList.remove("hidden");
+    customerPhoneInput.classList.add("border-red-500");
+    valid = false;
+  }
 
-    if (!valid) return;
+  if (!valid) return;
 
-    paymentTotal.textContent = cartTotalElement.textContent;
-    customerModal.style.display = "none";
-    paymentModal.style.display = "flex";
+  paymentTotal.textContent = cartTotalElement.textContent;
+  customerModal.style.display = "none";
+  paymentModal.style.display = "flex";
 });
 
-closeCustomerModalBtn.addEventListener("click", () => {
-    customerModal.style.display = "none";
-    cartModal.style.display = "flex";
+closeCustomerModalBtn?.addEventListener("click", () => {
+  customerModal.style.display = "none";
+  cartModal.style.display = "flex";
 });
 
-closePaymentBtn.addEventListener("click", () => {
-    paymentModal.style.display = "none";
-    pixWarning.classList.add("hidden");
-    trocoArea.classList.add("hidden");
-    trocoInput.value = "";
+closePaymentBtn?.addEventListener("click", () => {
+  paymentModal.style.display = "none";
+  pixWarning.classList.add("hidden");
+  trocoArea.classList.add("hidden");
+  trocoInput.value = "";
 });
 
 document.querySelectorAll("input[name='paymethod']").forEach((radio) => {
-    radio.addEventListener("change", () => {
-        if (!radio.checked) return;
+  radio.addEventListener("change", () => {
+    if (!radio.checked) return;
 
-        if (radio.value === "pix") {
-            pixWarning.classList.remove("hidden");
-            trocoArea.classList.add("hidden");
-            trocoInput.value = "";
-            return;
-        }
+    if (radio.value === "pix") {
+      pixWarning.classList.remove("hidden");
+      trocoArea.classList.add("hidden");
+      trocoInput.value = "";
+      return;
+    }
 
-        pixWarning.classList.add("hidden");
+    pixWarning.classList.add("hidden");
 
-        if (radio.value === "dinheiro") {
-            trocoArea.classList.remove("hidden");
-        } else {
-            trocoArea.classList.add("hidden");
-            trocoInput.value = "";
-        }
-    });
+    if (radio.value === "dinheiro") {
+      trocoArea.classList.remove("hidden");
+    } else {
+      trocoArea.classList.add("hidden");
+      trocoInput.value = "";
+    }
+  });
 });
 
 // ------------------------
 // WHATSAPP
 // ------------------------
 function buildWhatsAppMessage(paymentMethod) {
-    const customerName = customerNameInput.value.trim();
-    const customerPhone = customerPhoneInput.value.trim();
-    const address = addressInput.value.trim();
-    const neighborhood = neighborhoodInput.value.trim();
-    const number = numberInput.value.trim();
-    const cep = cepInput.value.trim();
+  const customerName = customerNameInput.value.trim();
+  const customerPhone = customerPhoneInput.value.trim();
+  const address = addressInput.value.trim();
+  const neighborhood = neighborhoodInput.value.trim();
+  const number = numberInput.value.trim();
+  const cep = cepInput.value.trim();
 
-    const subtotal = getProductsSubtotal();
-    const desconto = Math.min(calculateDiscount(subtotal), subtotal + DELIVERY_FEE);
-    const total = subtotal + DELIVERY_FEE - desconto;
+  const subtotal = getProductsSubtotal();
+  const desconto = Math.min(calculateDiscount(subtotal), subtotal + DELIVERY_FEE);
+  const total = subtotal + DELIVERY_FEE - desconto;
 
-    let paymentText = "";
+  let paymentText = "";
 
-    if (paymentMethod === "pix") {
-        paymentText = "PIX";
-    } else if (paymentMethod === "dinheiro") {
-        const troco = trocoInput.value.trim();
-        paymentText = troco
-            ? `Dinheiro | Troco para: R$ ${Number(troco).toFixed(2)}`
-            : "Dinheiro";
-    } else {
-        paymentText = "Cartão";
-    }
+  if (paymentMethod === "pix") {
+    paymentText = "PIX";
+  } else if (paymentMethod === "dinheiro") {
+    const troco = trocoInput.value.trim();
+    paymentText = troco
+      ? `Dinheiro | Troco para: R$ ${Number(troco).toFixed(2)}`
+      : "Dinheiro";
+  } else {
+    paymentText = "Cartão";
+  }
 
-    const itemsText = cart.map((item, index) => {
-        let line = `*${index + 1}.* ${item.name}\n`;
-        line += `Quantidade: ${item.quantity}\n`;
-        line += `Valor unitário: ${formatCurrency(item.price)}\n`;
-        line += `Subtotal: ${formatCurrency(item.price * item.quantity)}\n`;
+  const itemsText = cart.map((item, index) => {
+    let line = `*${index + 1}.* ${item.name}\n`;
+    line += `Quantidade: ${item.quantity}\n`;
+    line += `Valor unitário: ${formatCurrency(item.price)}\n`;
+    line += `Subtotal: ${formatCurrency(item.price * item.quantity)}\n`;
 
-        if (item.complementos) {
-            const extras = [];
+    if (item.complementos) {
+      const extras = [];
 
-            if (item.complementos.frutas?.length) {
-                extras.push(`Frutas: ${item.complementos.frutas.map((fruit) => `${fruit.name}${fruit.price > 0 ? ` (+${formatCurrency(fruit.price)})` : ""}`).join(", ")}`);
-            }
+      if (item.complementos.frutas?.length) {
+        extras.push(`Frutas: ${item.complementos.frutas.map((fruit) => `${fruit.name}${fruit.price > 0 ? ` (+${formatCurrency(fruit.price)})` : ""}`).join(", ")}`);
+      }
 
-            if (item.complementos.complementos?.length) {
-                extras.push(`Complementos: ${item.complementos.complementos.map((comp) => comp.name).join(", ")}`);
-            }
+      if (item.complementos.complementos?.length) {
+        extras.push(`Complementos: ${item.complementos.complementos.map((comp) => comp.name).join(", ")}`);
+      }
 
-            if (item.complementos.adicionais?.length) {
-                extras.push(`Adicionais: ${item.complementos.adicionais.map((add) => `${add.name} (+${formatCurrency(add.price)})`).join(", ")}`);
-            }
+      if (item.complementos.adicionais?.length) {
+        extras.push(`Adicionais: ${item.complementos.adicionais.map((add) => `${add.name} (+${formatCurrency(add.price)})`).join(", ")}`);
+      }
 
-            if (item.complementos.comboCup1) {
-                const cup1 = [];
+      if (item.complementos.comboCup1) {
+        const cup1 = [];
 
-                if (item.complementos.comboCup1.frutas?.length) {
-                    cup1.push(`Frutas: ${item.complementos.comboCup1.frutas.map((item) => item.name).join(", ")}`);
-                }
-
-                if (item.complementos.comboCup1.complementos?.length) {
-                    cup1.push(`Complementos: ${item.complementos.comboCup1.complementos.map((item) => item.name).join(", ")}`);
-                }
-
-                if (item.complementos.comboCup1.adicionais?.length) {
-                    cup1.push(`Adicionais: ${item.complementos.comboCup1.adicionais.map((item) => item.name).join(", ")}`);
-                }
-
-                if (cup1.length) {
-                    extras.push(`Copo 1 -> ${cup1.join(" | ")}`);
-                }
-            }
-
-            if (item.complementos.comboCup2) {
-                const cup2 = [];
-
-                if (item.complementos.comboCup2.frutas?.length) {
-                    cup2.push(`Frutas: ${item.complementos.comboCup2.frutas.map((item) => item.name).join(", ")}`);
-                }
-
-                if (item.complementos.comboCup2.complementos?.length) {
-                    cup2.push(`Complementos: ${item.complementos.comboCup2.complementos.map((item) => item.name).join(", ")}`);
-                }
-
-                if (item.complementos.comboCup2.adicionais?.length) {
-                    cup2.push(`Adicionais: ${item.complementos.comboCup2.adicionais.map((item) => item.name).join(", ")}`);
-                }
-
-                if (cup2.length) {
-                    extras.push(`Copo 2 -> ${cup2.join(" | ")}`);
-                }
-            }
-
-            if (extras.length) {
-                line += `${extras.join("\n")}\n`;
-            }
+        if (item.complementos.comboCup1.frutas?.length) {
+          cup1.push(`Frutas: ${item.complementos.comboCup1.frutas.map((x) => x.name).join(", ")}`);
         }
 
-        return line;
-    }).join("\n");
+        if (item.complementos.comboCup1.complementos?.length) {
+          cup1.push(`Complementos: ${item.complementos.comboCup1.complementos.map((x) => x.name).join(", ")}`);
+        }
 
-    let pixInfo = "";
-    if (paymentMethod === "pix") {
-        pixInfo = `\n📌 *Chave PIX da loja:* 64.258.108/0001-61\n📎 Enviar comprovante no WhatsApp após finalizar o pedido.\n`;
+        if (item.complementos.comboCup1.adicionais?.length) {
+          cup1.push(`Adicionais: ${item.complementos.comboCup1.adicionais.map((x) => x.name).join(", ")}`);
+        }
+
+        if (cup1.length) extras.push(`Copo 1 -> ${cup1.join(" | ")}`);
+      }
+
+      if (item.complementos.comboCup2) {
+        const cup2 = [];
+
+        if (item.complementos.comboCup2.frutas?.length) {
+          cup2.push(`Frutas: ${item.complementos.comboCup2.frutas.map((x) => x.name).join(", ")}`);
+        }
+
+        if (item.complementos.comboCup2.complementos?.length) {
+          cup2.push(`Complementos: ${item.complementos.comboCup2.complementos.map((x) => x.name).join(", ")}`);
+        }
+
+        if (item.complementos.comboCup2.adicionais?.length) {
+          cup2.push(`Adicionais: ${item.complementos.comboCup2.adicionais.map((x) => x.name).join(", ")}`);
+        }
+
+        if (cup2.length) extras.push(`Copo 2 -> ${cup2.join(" | ")}`);
+      }
+
+      if (extras.length) {
+        line += `${extras.join("\n")}\n`;
+      }
     }
 
-    return `
+    return line;
+  }).join("\n");
+
+  let pixInfo = "";
+  if (paymentMethod === "pix") {
+    pixInfo = `\n📌 *Chave PIX da loja:* 64.258.108/0001-61\n📎 Enviar comprovante no WhatsApp após finalizar o pedido.\n`;
+  }
+
+  return `
 🍧 *NOVO PEDIDO - GELATO'S AÇAÍ*
 
 👤 *Cliente:* ${customerName}
@@ -1049,48 +1281,48 @@ Subtotal: ${formatCurrency(subtotal)}
 Taxa de entrega: ${formatCurrency(DELIVERY_FEE)}
 Desconto: - ${formatCurrency(desconto)}
 💰 Total final: ${formatCurrency(total)}
-    `.trim();
+  `.trim();
 }
 
 function sendOrderToWhatsApp(paymentMethod) {
-    const message = buildWhatsAppMessage(paymentMethod);
-    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
-    window.open(url, "_blank");
+  const message = buildWhatsAppMessage(paymentMethod);
+  const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+  window.open(url, "_blank");
 }
 
 // ------------------------
 // FINALIZAR PEDIDO
 // ------------------------
 function finalizeOrder(paymentMethod) {
-    sendOrderToWhatsApp(paymentMethod);
+  sendOrderToWhatsApp(paymentMethod);
 
-    paymentModal.style.display = "none";
-    customerModal.style.display = "none";
-    cartModal.style.display = "none";
+  paymentModal.style.display = "none";
+  customerModal.style.display = "none";
+  cartModal.style.display = "none";
 
-    cart = [];
-    updateCartModal();
-    clearTextInputs();
-    resetPaymentOptions();
-    resetCouponState();
+  cart = [];
+  updateCartModal();
+  clearTextInputs();
+  resetPaymentOptions();
+  resetCouponState();
 
-    alert("Pedido enviado para o WhatsApp com sucesso!");
+  alert("Pedido enviado para o WhatsApp com sucesso!");
 }
 
-confirmPaymentBtn.addEventListener("click", () => {
-    const selectedMethod = document.querySelector("input[name='paymethod']:checked");
+confirmPaymentBtn?.addEventListener("click", () => {
+  const selectedMethod = document.querySelector("input[name='paymethod']:checked");
 
-    if (!selectedMethod) {
-        alert("Escolha uma forma de pagamento!");
-        return;
-    }
+  if (!selectedMethod) {
+    alert("Escolha uma forma de pagamento!");
+    return;
+  }
 
-    if (selectedMethod.value === "dinheiro" && !trocoInput.value.trim()) {
-        alert("Informe o valor do troco!");
-        return;
-    }
+  if (selectedMethod.value === "dinheiro" && !trocoInput.value.trim()) {
+    alert("Informe o valor do troco!");
+    return;
+  }
 
-    finalizeOrder(selectedMethod.value);
+  finalizeOrder(selectedMethod.value);
 });
 
 // ------------------------
@@ -1098,3 +1330,5 @@ confirmPaymentBtn.addEventListener("click", () => {
 // ------------------------
 loadDefaultProductOptions();
 updateCartModal();
+carregarStoreSettingsPublic();
+carregarProdutos();
