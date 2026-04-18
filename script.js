@@ -77,11 +77,7 @@ const comboCup2Container = document.getElementById("combo-cup2-container");
 const DELIVERY_FEE = 4.5;
 const WHATSAPP_NUMBER = "5511944842614";
 
-const VALID_COUPONS = {
-  GELATO10: { type: "percent", value: 10 },
-  DESCONTO5: { type: "fixed", value: 5 },
-  ENTREGAZERO: { type: "delivery", value: 4.5 }
-};
+let couponsCache = [];
 
 let cart = [];
 let appliedCoupon = null;
@@ -205,6 +201,43 @@ function normalizeImage(url) {
 function getCategoryNameById(categoryId) {
   const category = categoriesCache.find((c) => c.id === categoryId);
   return category ? category.name : "";
+}
+
+// ------------------------
+// CUPONS DO BANCO
+// ------------------------
+async function carregarCupons() {
+  try {
+    const { data, error } = await supabaseClient
+      .from("coupons")
+      .select("*")
+      .eq("active", true);
+
+    if (error) {
+      console.error("Erro ao carregar cupons:", error);
+      return;
+    }
+
+    couponsCache = data || [];
+  } catch (err) {
+    console.error("Erro inesperado ao carregar cupons:", err);
+  }
+}
+
+function buscarCupomPorCodigo(code) {
+  const agora = new Date();
+
+  return couponsCache.find((coupon) => {
+    if (String(coupon.code).toUpperCase() !== code.toUpperCase()) return false;
+    if (!coupon.active) return false;
+
+    if (coupon.expires_at) {
+      const expiracao = new Date(coupon.expires_at);
+      if (expiracao < agora) return false;
+    }
+
+    return true;
+  });
 }
 
 // ------------------------
@@ -812,7 +845,7 @@ cartItemsContainer?.addEventListener("click", (event) => {
 // CUPOM
 // ------------------------
 applyCouponBtn?.addEventListener("click", () => {
-  const coupon = couponCodeInput.value.trim().toUpperCase();
+  const couponCode = couponCodeInput.value.trim().toUpperCase();
   const subtotal = getProductsSubtotal();
 
   if (subtotal <= 0) {
@@ -820,7 +853,7 @@ applyCouponBtn?.addEventListener("click", () => {
     return;
   }
 
-  if (!coupon) {
+  if (!couponCode) {
     appliedCoupon = null;
     discountAmount = 0;
     updateCouponMessage("Digite um cupom para aplicar.", "error");
@@ -828,21 +861,24 @@ applyCouponBtn?.addEventListener("click", () => {
     return;
   }
 
-  if (!VALID_COUPONS[coupon]) {
+  const coupon = buscarCupomPorCodigo(couponCode);
+
+  if (!coupon) {
     appliedCoupon = null;
     discountAmount = 0;
-    updateCouponMessage("Cupom inválido.", "error");
+    updateCouponMessage("Cupom inválido ou expirado.", "error");
     updateCartModal();
     return;
   }
 
   appliedCoupon = {
-    code: coupon,
-    ...VALID_COUPONS[coupon]
+    code: coupon.code,
+    type: coupon.discount_type,
+    value: Number(coupon.discount_value || 0)
   };
 
   discountAmount = calculateDiscount(subtotal);
-  updateCouponMessage(`Cupom ${coupon} aplicado com sucesso!`);
+  updateCouponMessage(`Cupom ${coupon.code} aplicado com sucesso!`);
   updateCartModal();
 });
 
@@ -1224,7 +1260,9 @@ function buildWhatsAppMessage(paymentMethod) {
           cup1.push(`Adicionais: ${item.complementos.comboCup1.adicionais.map((x) => x.name).join(", ")}`);
         }
 
-        if (cup1.length) extras.push(`Copo 1 -> ${cup1.join(" | ")}`);
+        if (cup1.length) {
+          extras.push(`Copo 1 -> ${cup1.join(" | ")}`);
+        }
       }
 
       if (item.complementos.comboCup2) {
@@ -1242,7 +1280,9 @@ function buildWhatsAppMessage(paymentMethod) {
           cup2.push(`Adicionais: ${item.complementos.comboCup2.adicionais.map((x) => x.name).join(", ")}`);
         }
 
-        if (cup2.length) extras.push(`Copo 2 -> ${cup2.join(" | ")}`);
+        if (cup2.length) {
+          extras.push(`Copo 2 -> ${cup2.join(" | ")}`);
+        }
       }
 
       if (extras.length) {
@@ -1328,7 +1368,10 @@ confirmPaymentBtn?.addEventListener("click", () => {
 // ------------------------
 // INICIALIZAÇÃO
 // ------------------------
-loadDefaultProductOptions();
-updateCartModal();
-carregarStoreSettingsPublic();
-carregarProdutos();
+(async function init() {
+  loadDefaultProductOptions();
+  updateCartModal();
+  await carregarStoreSettingsPublic();
+  await carregarCupons();
+  await carregarProdutos();
+})();
