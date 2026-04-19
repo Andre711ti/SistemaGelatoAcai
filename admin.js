@@ -14,6 +14,7 @@ const passwordInput = document.getElementById("admin-password");
 const toggleStoreBtn = document.getElementById("toggle-store-btn");
 const productsAdminList = document.getElementById("products-admin-list");
 const optionsAdminList = document.getElementById("options-admin-list");
+const globalOptionsAdminList = document.getElementById("global-options-admin-list");
 
 let currentStoreSettings = null;
 
@@ -64,6 +65,7 @@ async function checkAdminAccess() {
 
   await carregarStoreSettings();
   await carregarProdutosAdmin();
+  await carregarOpcoesGlobaisAdmin();
   await carregarOpcoesAdmin();
 
   return true;
@@ -189,6 +191,8 @@ async function carregarProdutosAdmin() {
   categories.forEach((categoria) => {
     const produtosDaCategoria = products.filter((p) => p.category_id === categoria.id);
 
+    if (!produtosDaCategoria.length) return;
+
     const bloco = document.createElement("div");
     bloco.className = "border rounded p-4";
 
@@ -237,7 +241,99 @@ async function toggleProduto(productId, active) {
 }
 
 // ------------------------
-// OPÇÕES
+// CONTROLE GLOBAL DE OPÇÕES
+// ------------------------
+async function carregarOpcoesGlobaisAdmin() {
+  const { data, error } = await supabaseClient
+    .from("product_options")
+    .select("group_name, option_name, active")
+    .order("group_name", { ascending: true })
+    .order("option_name", { ascending: true });
+
+  if (error) {
+    console.error("Erro ao carregar opções globais:", error);
+    return;
+  }
+
+  globalOptionsAdminList.innerHTML = "";
+
+  const gruposDesejados = ["Frutas", "Complementos", "Adicionais"];
+
+  gruposDesejados.forEach((grupo) => {
+    const itensDoGrupo = (data || []).filter((item) => item.group_name === grupo);
+
+    const mapa = new Map();
+
+    itensDoGrupo.forEach((item) => {
+      const chave = item.option_name.trim();
+
+      if (!mapa.has(chave)) {
+        mapa.set(chave, {
+          option_name: item.option_name,
+          active: item.active
+        });
+      } else {
+        const atual = mapa.get(chave);
+        atual.active = atual.active && item.active;
+        mapa.set(chave, atual);
+      }
+    });
+
+    const itensUnicos = [...mapa.values()].sort((a, b) =>
+      a.option_name.localeCompare(b.option_name, "pt-BR")
+    );
+
+    if (!itensUnicos.length) return;
+
+    const bloco = document.createElement("div");
+    bloco.className = "border rounded p-4";
+
+    const itensHtml = itensUnicos.map((item) => `
+      <div class="flex justify-between items-center border-b py-2 gap-4">
+        <div>
+          <p class="font-semibold">${item.option_name}</p>
+          <p class="text-sm text-gray-600">${grupo}</p>
+        </div>
+        <button
+          class="toggle-global-option-btn px-3 py-1 rounded text-white ${item.active ? "bg-green-600" : "bg-red-600"}"
+          data-group="${grupo}"
+          data-name="${item.option_name}"
+          data-active="${item.active}">
+          ${item.active ? "Ativo" : "Inativo"}
+        </button>
+      </div>
+    `).join("");
+
+    bloco.innerHTML = `
+      <h3 class="text-lg font-bold mb-3">${grupo}</h3>
+      <div>${itensHtml}</div>
+    `;
+
+    globalOptionsAdminList.appendChild(bloco);
+  });
+}
+
+async function toggleGlobalOption(groupName, optionName, active) {
+  const { error } = await supabaseClient
+    .from("product_options")
+    .update({
+      active: !active
+    })
+    .eq("group_name", groupName)
+    .eq("option_name", optionName);
+
+  if (error) {
+    console.error("Erro ao atualizar opção global:", error);
+    alert(`Erro ao atualizar opção global: ${error.message}`);
+    return;
+  }
+
+  await carregarOpcoesGlobaisAdmin();
+  await carregarOpcoesAdmin();
+}
+
+// ------------------------
+// OPÇÕES POR PRODUTO
 // ------------------------
 async function carregarOpcoesAdmin() {
   const { data: products, error: productsError } = await supabaseClient
@@ -266,6 +362,8 @@ async function carregarOpcoesAdmin() {
 
   products.forEach((produto) => {
     const opcoesDoProduto = options.filter((op) => op.product_id === produto.id);
+
+    if (!opcoesDoProduto.length) return;
 
     const bloco = document.createElement("div");
     bloco.className = "border rounded p-4";
@@ -309,6 +407,7 @@ async function toggleOpcao(optionId, active) {
   }
 
   await carregarOpcoesAdmin();
+  await carregarOpcoesGlobaisAdmin();
 }
 
 // ------------------------
@@ -324,6 +423,16 @@ document.addEventListener("click", async (event) => {
     const id = Number(productBtn.dataset.id);
     const active = productBtn.dataset.active === "true";
     await toggleProduto(id, active);
+    return;
+  }
+
+  const globalOptionBtn = event.target.closest(".toggle-global-option-btn");
+  if (globalOptionBtn) {
+    const groupName = globalOptionBtn.dataset.group;
+    const optionName = globalOptionBtn.dataset.name;
+    const active = globalOptionBtn.dataset.active === "true";
+
+    await toggleGlobalOption(groupName, optionName, active);
     return;
   }
 
